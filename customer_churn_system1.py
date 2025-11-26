@@ -330,37 +330,54 @@ class EnhancedChurnPredictor:
     def set_uploaded_data(self, df):
         """Set uploaded CSV data"""
         self.uploaded_data = df
-    
-def generate_sample_data(self, n_samples=10000):
-    """Generate synthetic customer data for demonstration"""
-    np.random.seed(42)
-    
-    # Use simple numpy functions that don't require method chaining
-    data = {
-        'customer_id': list(range(1, n_samples + 1)),
-        'credit_score': np.random.randint(300, 851, n_samples),
-        'gender': np.random.choice(['Male', 'Female'], n_samples),
-        'age': np.random.randint(18, 81, n_samples),
-        'tenure': np.random.randint(0, 11, n_samples),
-        'balance': np.random.uniform(0, 250000, n_samples),
-        'products_number': np.random.choice([1, 2, 3, 4], n_samples),
-        'credit_card': np.random.choice([True, False], n_samples),
-        'active_member': np.random.choice([True, False], n_samples),
-        'estimated_salary': np.random.uniform(0, 200000, n_samples),
-    }
-    
-    df = pd.DataFrame(data)
-    
-    # Simple churn calculation
-    churn_conditions = (
-        (df['age'] > 60) |
-        (df['balance'] < 1000) |
-        (~df['active_member']) |
-        (df['credit_score'] < 600)
-    )
-    df['churn'] = churn_conditions.astype(int)
-    
-    return df
+    def generate_sample_data(self, n_samples=10000):
+        """Generate synthetic customer data using Python random only"""
+        import random
+        import pandas as pd
+
+        try:
+            random.seed(42)
+
+            data = {
+                'customer_id': list(range(1, n_samples + 1)),
+                'credit_score': [random.randint(300, 850) for _ in range(n_samples)],
+                'gender': [random.choice(['Male', 'Female']) for _ in range(n_samples)],
+                'age': [random.randint(18, 80) for _ in range(n_samples)],
+                'tenure': [random.randint(0, 10) for _ in range(n_samples)],
+                'balance': [random.uniform(0, 250000) for _ in range(n_samples)],
+                'products_number': [random.choice([1, 2, 3, 4]) for _ in range(n_samples)],
+                'credit_card': [random.choice([True, False]) for _ in range(n_samples)],
+                'active_member': [random.choice([True, False]) for _ in range(n_samples)],
+                'estimated_salary': [random.uniform(0, 200000) for _ in range(n_samples)],
+            }
+
+            df = pd.DataFrame(data)
+
+            churn_conditions = (
+                (df['age'] > 60) |
+                (df['balance'] < 1000) |
+                (~df['active_member']) |
+                (df['credit_score'] < 600)
+            )
+            df['churn'] = churn_conditions.astype(int)
+
+            return df
+
+        except Exception as e:
+            # Fallback: create minimal data
+            return pd.DataFrame({
+                'customer_id': [1, 2, 3],
+                'credit_score': [650, 720, 580],
+                'gender': ['Male', 'Female', 'Male'],
+                'age': [45, 32, 55],
+                'tenure': [3, 5, 1],
+                'balance': [50000, 75000, 500],
+                'products_number': [2, 1, 3],
+                'credit_card': [True, False, True],
+                'active_member': [True, True, False],
+                'estimated_salary': [75000, 80000, 45000],
+                'churn': [0, 0, 1]
+            })
     
     def preprocess_data(self, df):
         """Preprocess the data for training"""
