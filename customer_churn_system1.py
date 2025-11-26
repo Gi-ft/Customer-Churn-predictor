@@ -245,7 +245,7 @@ class EnhancedRecommendationEngine:
         return export_data
 
 # =============================================================================
-# ENHANCED CHURN PREDICTOR CLASS - CORRECTED VERSION
+# ENHANCED CHURN PREDICTOR CLASS 
 # =============================================================================
 
 class EnhancedChurnPredictor:
@@ -352,15 +352,13 @@ def generate_sample_data(self, n_samples=10000):
     df = pd.DataFrame(data)
     
     # Simple churn calculation
-    churn_prob = (
-        (df['age'] > 60) * 0.3 +
-        (df['balance'] < 1000) * 0.2 +     
-        (~df['active_member']) * 0.25 +    
-        (df['credit_score'] < 600) * 0.15 +
-        np.random.random(n_samples) * 0.1
+    churn_conditions = (
+        (df['age'] > 60) |
+        (df['balance'] < 1000) |
+        (~df['active_member']) |
+        (df['credit_score'] < 600)
     )
-    
-    df['churn'] = (churn_prob > 0.5).astype(int)
+    df['churn'] = churn_conditions.astype(int)
     
     return df
     
