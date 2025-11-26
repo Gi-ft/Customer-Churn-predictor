@@ -337,18 +337,17 @@ class EnhancedChurnPredictor:
         n_samples = 2000
         
         data = {
-            'customer_id': range(1, n_samples + 1),
-            'credit_score': np.random.normal(650, 100, n_samples).astype(int).clip(300, 850),
-            'gender': np.random.choice(['Male', 'Female'], n_samples, p=[0.55, 0.45]),
-            'age': np.random.normal(45, 15, n_samples).astype.int().clip(18, 80),
-            'tenure': np.random.exponential(3, n_samples).astype(int).clip(0, 10),
-            'balance': np.random.gamma(2, 25000, n_samples).clip(0, 250000),
-            'products_number': np.random.choice([1, 2, 3, 4], n_samples, p=[0.4, 0.35, 0.2, 0.05]),
-            'credit_card': np.random.choice([True, False], n_samples, p=[0.7, 0.3]),
-            'active_member': np.random.choice([True, False], n_samples, p=[0.6, 0.4]),
-            'estimated_salary': np.random.normal(75000, 30000, n_samples).clip(0, 200000),
-        }
-        
+        'customer_id': range(1, n_samples + 1),
+        'credit_score': np.random.normal(650, 100, n_samples).astype(int).clip(300, 850),
+        'gender': np.random.choice(['Male', 'Female'], n_samples, p=[0.55, 0.45]),
+        'age': np.random.normal(45, 15, n_samples).astype(int).clip(18, 80), 
+        'tenure': np.random.exponential(3, n_samples).astype(int).clip(0, 10),
+        'balance': np.random.gamma(2, 25000, n_samples).clip(0, 250000),
+        'products_number': np.random.choice([1, 2, 3, 4], n_samples, p=[0.4, 0.35, 0.2, 0.05]),
+        'credit_card': np.random.choice([True, False], n_samples, p=[0.7, 0.3]),
+        'active_member': np.random.choice([True, False], n_samples, p=[0.6, 0.4]),
+        'estimated_salary': np.random.normal(75000, 30000, n_samples).clip(0, 200000),
+    }
         df = pd.DataFrame(data)
         
         # More realistic churn generation
