@@ -333,58 +333,31 @@ class EnhancedChurnPredictor:
     
 def generate_sample_data(self, n_samples=10000):
     """Generate synthetic customer data for demonstration"""
-    np.random.seed(42)  # For reproducible results
+    np.random.seed(42)
     
-    # Generate each column separately to avoid method chaining issues
-    customer_id = list(range(1, n_samples + 1))
-    
-    credit_score = np.random.normal(650, 100, n_samples)
-    credit_score = credit_score.astype(int)
-    credit_score = np.clip(credit_score, 300, 850)
-    
-    gender = np.random.choice(['Male', 'Female'], n_samples, p=[0.55, 0.45])
-    
-    age = np.random.normal(45, 15, n_samples)
-    age = age.astype(int)
-    age = np.clip(age, 18, 80)
-    
-    tenure = np.random.exponential(3, n_samples)
-    tenure = tenure.astype(int)
-    tenure = np.clip(tenure, 0, 10)
-    
-    balance = np.random.gamma(2, 25000, n_samples)
-    balance = np.clip(balance, 0, 250000)
-    
-    products_number = np.random.choice([1, 2, 3, 4], n_samples, p=[0.4, 0.35, 0.2, 0.05])
-    credit_card = np.random.choice([True, False], n_samples, p=[0.7, 0.3])
-    active_member = np.random.choice([True, False], n_samples, p=[0.6, 0.4])
-    
-    estimated_salary = np.random.normal(75000, 30000, n_samples)
-    estimated_salary = np.clip(estimated_salary, 0, 200000)
-    
+    # Use simple numpy functions that don't require method chaining
     data = {
-        'customer_id': customer_id,
-        'credit_score': credit_score,
-        'gender': gender,
-        'age': age,
-        'tenure': tenure,
-        'balance': balance,
-        'products_number': products_number,
-        'credit_card': credit_card,
-        'active_member': active_member,
-        'estimated_salary': estimated_salary,
+        'customer_id': list(range(1, n_samples + 1)),
+        'credit_score': np.random.randint(300, 851, n_samples),
+        'gender': np.random.choice(['Male', 'Female'], n_samples),
+        'age': np.random.randint(18, 81, n_samples),
+        'tenure': np.random.randint(0, 11, n_samples),
+        'balance': np.random.uniform(0, 250000, n_samples),
+        'products_number': np.random.choice([1, 2, 3, 4], n_samples),
+        'credit_card': np.random.choice([True, False], n_samples),
+        'active_member': np.random.choice([True, False], n_samples),
+        'estimated_salary': np.random.uniform(0, 200000, n_samples),
     }
     
-    # Create DataFrame first
     df = pd.DataFrame(data)
     
-    # Calculate churn based on features (simplified logic)
+    # Simple churn calculation
     churn_prob = (
-        (df['age'] > 60).astype(int) * 0.3 +
-        (df['balance'] < 1000).astype(int) * 0.2 +
-        (~df['active_member']).astype(int) * 0.25 +
-        (df['credit_score'] < 600).astype(int) * 0.15 +
-        np.random.normal(0, 0.1, n_samples)
+        (df['age'] > 60) * 0.3 +
+        (df['balance'] < 1000) * 0.2 +     
+        (~df['active_member']) * 0.25 +    
+        (df['credit_score'] < 600) * 0.15 +
+        np.random.random(n_samples) * 0.1
     )
     
     df['churn'] = (churn_prob > 0.5).astype(int)
