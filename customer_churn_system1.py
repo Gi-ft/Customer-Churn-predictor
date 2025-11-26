@@ -333,34 +333,39 @@ class EnhancedChurnPredictor:
     
 def generate_sample_data(self, n_samples=10000):
     """Generate synthetic customer data for demonstration"""
-    np.random.seed(42)  # For reproducible results
+    np.random.seed(42)
+    
+    # Simple array creation without complex method chaining
+    age_values = np.random.randint(18, 80, n_samples)
+    tenure_values = np.random.randint(0, 11, n_samples)  # 0-10 inclusive
+    credit_score_values = np.random.randint(300, 851, n_samples)
+    balance_values = np.random.uniform(0, 250000, n_samples)
+    salary_values = np.random.uniform(0, 200000, n_samples)
     
     data = {
         'customer_id': range(1, n_samples + 1),
-        'credit_score': np.clip(np.random.normal(650, 100, n_samples).astype(int), 300, 850),
-        'gender': np.random.choice(['Male', 'Female'], n_samples, p=[0.55, 0.45]),
-        'age': np.clip(np.random.normal(45, 15, n_samples).astype(int), 18, 80),  # Fixed
-        'tenure': np.clip(np.random.exponential(3, n_samples).astype(int), 0, 10),
-        'balance': np.clip(np.random.gamma(2, 25000, n_samples), 0, 250000),
-        'products_number': np.random.choice([1, 2, 3, 4], n_samples, p=[0.4, 0.35, 0.2, 0.05]),
-        'credit_card': np.random.choice([True, False], n_samples, p=[0.7, 0.3]),
-        'active_member': np.random.choice([True, False], n_samples, p=[0.6, 0.4]),
-        'estimated_salary': np.clip(np.random.normal(75000, 30000, n_samples), 0, 200000),
+        'credit_score': credit_score_values,
+        'gender': np.random.choice(['Male', 'Female'], n_samples),
+        'age': age_values,
+        'tenure': tenure_values,
+        'balance': balance_values,
+        'products_number': np.random.choice([1, 2, 3, 4], n_samples),
+        'credit_card': np.random.choice([True, False], n_samples),
+        'active_member': np.random.choice([True, False], n_samples),
+        'estimated_salary': salary_values,
     }
     
-    # Calculate churn based on features
     df = pd.DataFrame(data)
     
-    # Simple churn calculation logic
-    churn_prob = (
-        (df['age'] > 60) * 0.3 +
-        (df['balance'] < 1000) * 0.2 +
-        (df['active_member'] == False) * 0.25 +
-        (df['credit_score'] < 600) * 0.15 +
-        np.random.normal(0, 0.1, n_samples)
+    # Simple churn calculation
+    churn_conditions = (
+        (df['age'] > 60) |
+        (df['balance'] < 1000) |
+        (~df['active_member']) |
+        (df['credit_score'] < 600)
     )
     
-    df['churn'] = (churn_prob > 0.5).astype(int)
+    df['churn'] = churn_conditions.astype(int)
     
     return df
         
