@@ -8,4 +8,4 @@ plotly==6.3.1
 psycopg2-binary==2.9.10
 pickle-mixin==1.0.2
 joblib==1.5.2
-openpyxl==3.1.2
+xlsxwriter==3.1.0
