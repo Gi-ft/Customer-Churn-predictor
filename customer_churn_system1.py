@@ -10,7 +10,7 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, roc_auc_score, confusion_matrix
 from sklearn.preprocessing import StandardScaler, LabelEncoder
-import psycopg2
+import sqlite3
 import pickle
 import warnings
 import io
@@ -18,16 +18,17 @@ import base64
 from datetime import datetime, timedelta
 import seaborn as sns
 import matplotlib.pyplot as plt
+import os
 warnings.filterwarnings('ignore')
 
 # =============================================================================
-# ENHANCED DATABASE SCHEMA
+# SQLITE DATABASE SCHEMA
 # =============================================================================
 
-POSTGRES_SCHEMA = """
+SQLITE_SCHEMA = """
 -- Customers table
 CREATE TABLE IF NOT EXISTS customers (
-    customer_id SERIAL PRIMARY KEY,
+    customer_id INTEGER PRIMARY KEY AUTOINCREMENT,
     credit_score INTEGER,
     gender VARCHAR(10),
     age INTEGER,
@@ -43,7 +44,7 @@ CREATE TABLE IF NOT EXISTS customers (
 
 -- Enhanced Predictions table with scenario tracking
 CREATE TABLE IF NOT EXISTS predictions (
-    prediction_id SERIAL PRIMARY KEY,
+    prediction_id INTEGER PRIMARY KEY AUTOINCREMENT,
     customer_id INTEGER REFERENCES customers(customer_id),
     prediction_timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     churn_probability DECIMAL(5,4),
@@ -55,7 +56,7 @@ CREATE TABLE IF NOT EXISTS predictions (
 
 -- Enhanced Model performance table with ROC-AUC
 CREATE TABLE IF NOT EXISTS model_performance (
-    performance_id SERIAL PRIMARY KEY,
+    performance_id INTEGER PRIMARY KEY AUTOINCREMENT,
     model_name VARCHAR(50),
     accuracy DECIMAL(5,4),
     precision DECIMAL(5,4),
@@ -67,7 +68,7 @@ CREATE TABLE IF NOT EXISTS model_performance (
 
 -- Retention actions table
 CREATE TABLE IF NOT EXISTS retention_actions (
-    action_id SERIAL PRIMARY KEY,
+    action_id INTEGER PRIMARY KEY AUTOINCREMENT,
     customer_id INTEGER REFERENCES customers(customer_id),
     action_type VARCHAR(100),
     action_details TEXT,
@@ -245,18 +246,12 @@ class EnhancedRecommendationEngine:
         return export_data
 
 # =============================================================================
-# ENHANCED CHURN PREDICTOR CLASS 
+# ENHANCED CHURN PREDICTOR CLASS (SQLITE VERSION)
 # =============================================================================
 
 class EnhancedChurnPredictor:
-    def __init__(self, db_config=None):
-        self.db_config = db_config or {
-            'host': 'localhost',
-            'database': 'churn_prediction',
-            'user': 'postgres',
-            'password': 'password',
-            'port': 5432
-        }
+    def __init__(self, db_path='churn_prediction.db'):
+        self.db_path = db_path
         self.models = {}
         self.scaler = StandardScaler()
         self.label_encoders = {}
@@ -265,19 +260,20 @@ class EnhancedChurnPredictor:
         self.uploaded_data = None
         self.recommendation_engine = EnhancedRecommendationEngine()
         self.prediction_history = []
-        self.local_predictions = []  # Local storage for predictions when DB not connected
+        self.local_predictions = []
         
-    def connect_db(self, db_config=None):
-        """Connect to PostgreSQL database with provided configuration"""
-        if db_config:
-            self.db_config = db_config
+    def connect_db(self, db_path=None):
+        """Connect to SQLite database"""
+        if db_path:
+            self.db_path = db_path
             
         try:
-            self.connection = psycopg2.connect(**self.db_config)
+            self.connection = sqlite3.connect(self.db_path, check_same_thread=False)
+            self.connection.row_factory = sqlite3.Row
             self.is_db_connected = True
             # Initialize tables
             self.initialize_tables()
-            return True, "✅ Successfully connected to database!"
+            return True, "✅ Successfully connected to SQLite database!"
         except Exception as e:
             error_msg = f"❌ Database connection error: {e}"
             print(error_msg)
@@ -299,7 +295,7 @@ class EnhancedChurnPredictor:
         try:
             cursor = self.connection.cursor()
             # Execute schema creation
-            for statement in POSTGRES_SCHEMA.split(';'):
+            for statement in SQLITE_SCHEMA.split(';'):
                 if statement.strip():
                     cursor.execute(statement)
             self.connection.commit()
@@ -308,8 +304,7 @@ class EnhancedChurnPredictor:
             print(f"Error initializing tables: {e}")
     
     def load_data(self):
-        """Load data from uploaded CSV, PostgreSQL, or generate sample data"""
-        # Priority: Uploaded CSV > Database > Sample data
+        """Load data from uploaded CSV, SQLite, or generate sample data"""
         if self.uploaded_data is not None:
             return self.uploaded_data
             
@@ -330,6 +325,7 @@ class EnhancedChurnPredictor:
     def set_uploaded_data(self, df):
         """Set uploaded CSV data"""
         self.uploaded_data = df
+        
     def generate_sample_data(self, n_samples=10000):
         """Generate synthetic customer data using Python random only"""
         import random
@@ -488,7 +484,7 @@ class EnhancedChurnPredictor:
             cursor.execute("""
                 INSERT INTO model_performance 
                 (model_name, accuracy, precision, recall, f1_score, roc_auc)
-                VALUES (%s, %s, %s, %s, %s, %s)
+                VALUES (?, ?, ?, ?, ?, ?)
             """, (model_name, accuracy, precision, recall, f1, roc_auc))
             self.connection.commit()
             cursor.close()
@@ -505,7 +501,7 @@ class EnhancedChurnPredictor:
             'model': model_name,
             'scenario_note': scenario_note,
             'is_scenario': is_scenario,
-            'customer_data': customer_data.copy()  # Store a copy for local use
+            'customer_data': customer_data.copy()
         }
         
         if self.is_db_connected:
@@ -514,21 +510,10 @@ class EnhancedChurnPredictor:
                 
                 # First, insert or update customer data
                 cursor.execute("""
-                    INSERT INTO customers 
+                    INSERT OR REPLACE INTO customers 
                     (customer_id, credit_score, gender, age, tenure, balance, 
                      products_number, credit_card, active_member, estimated_salary, churn)
-                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-                    ON CONFLICT (customer_id) DO UPDATE SET
-                    credit_score = EXCLUDED.credit_score,
-                    gender = EXCLUDED.gender,
-                    age = EXCLUDED.age,
-                    tenure = EXCLUDED.tenure,
-                    balance = EXCLUDED.balance,
-                    products_number = EXCLUDED.products_number,
-                    credit_card = EXCLUDED.credit_card,
-                    active_member = EXCLUDED.active_member,
-                    estimated_salary = EXCLUDED.estimated_salary,
-                    churn = EXCLUDED.churn
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """, (
                     customer_data.get('customer_id', 1),
                     customer_data['credit_score'],
@@ -547,7 +532,7 @@ class EnhancedChurnPredictor:
                 cursor.execute("""
                     INSERT INTO predictions 
                     (customer_id, churn_probability, predicted_churn, model_used, scenario_note, is_scenario)
-                    VALUES (%s, %s, %s, %s, %s, %s)
+                    VALUES (?, ?, ?, ?, ?, ?)
                 """, (
                     customer_data.get('customer_id', 1),
                     probability,
@@ -571,21 +556,26 @@ class EnhancedChurnPredictor:
         self.prediction_history.append(prediction_record)
     
     def get_prediction_history(self, limit=50):
-        """Retrieve prediction history from database or local storage"""
+        """Retrieve prediction history from database or local storage - FIXED VERSION"""
         if self.is_db_connected:
             try:
                 query = """
                     SELECT p.prediction_id, p.customer_id, p.prediction_timestamp, 
-                           p.churn_probability, p.predicted_churn, p.model_used,
-                           p.scenario_note, p.is_scenario,
-                           c.credit_score, c.age, c.balance, c.gender, c.tenure,
-                           c.products_number, c.credit_card, c.active_member, c.estimated_salary
+                        p.churn_probability, p.predicted_churn, p.model_used,
+                        p.scenario_note, p.is_scenario,
+                        c.credit_score, c.age, c.balance, c.gender, c.tenure,
+                        c.products_number, c.credit_card, c.active_member, c.estimated_salary
                     FROM predictions p
                     JOIN customers c ON p.customer_id = c.customer_id
                     ORDER BY p.prediction_timestamp DESC
-                    LIMIT %s
+                    LIMIT ?
                 """
                 df = pd.read_sql(query, self.connection, params=(limit,))
+                
+                # Convert timestamp to datetime
+                if 'prediction_timestamp' in df.columns:
+                    df['prediction_timestamp'] = pd.to_datetime(df['prediction_timestamp'])
+                    
                 return df
             except Exception as e:
                 print(f"Error retrieving prediction history from database: {e}")
@@ -594,15 +584,15 @@ class EnhancedChurnPredictor:
         else:
             # Use local storage when no database connection
             return self._get_local_prediction_history(limit)
-    
+
     def _get_local_prediction_history(self, limit=50):
-        """Get prediction history from local storage"""
+        """Get prediction history from local storage - FIXED VERSION"""
         if not self.local_predictions:
             return pd.DataFrame()
         
         # Convert local predictions to DataFrame
         history_data = []
-        for pred in self.local_predictions[-limit:]:  # Get most recent predictions
+        for pred in self.local_predictions[-limit:]:
             history_data.append({
                 'prediction_id': len(history_data) + 1,
                 'customer_id': pred['customer_id'],
@@ -623,223 +613,13 @@ class EnhancedChurnPredictor:
                 'estimated_salary': pred['customer_data'].get('estimated_salary', 0)
             })
         
-        return pd.DataFrame(history_data)
-
-    def predict_churn(self, customer_data, model_name='Random Forest', scenario_note=""):
-        """Predict churn for a single customer with scenario tracking"""
-        if model_name not in self.models:
-            raise ValueError(f"Model {model_name} not found")
+        df = pd.DataFrame(history_data)
         
-        # Preprocess customer data
-        df_customer = pd.DataFrame([customer_data])
-        
-        # Encode categorical variables
-        for col in ['gender']:
-            if col in customer_data and col in self.label_encoders:
-                try:
-                    df_customer[col] = self.label_encoders[col].transform([customer_data[col]])[0]
-                except ValueError:
-                    st.error(f"Unknown gender value: {customer_data[col]}. Please use 'Male' or 'Female'.")
-                    return 0.5, False, {}
-        
-        # Select features in correct order
-        feature_columns = [
-            'credit_score', 'gender', 'age', 'tenure', 
-            'balance', 'products_number', 'credit_card', 
-            'active_member', 'estimated_salary'
-        ]
-        
-        available_features = [col for col in feature_columns if col in df_customer.columns]
-        X = df_customer[available_features]
-        
-        # Make prediction
-        if model_name == 'Logistic Regression':
-            X_scaled = self.scaler.transform(X)
-            probability = self.models[model_name].predict_proba(X_scaled)[0, 1]
-        else:
-            probability = self.models[model_name].predict_proba(X)[0, 1]
-        
-        prediction = probability > 0.5
-        
-        # Get recommendations
-        recommendations = self.recommendation_engine.get_recommendations(probability, customer_data)
-        
-        # Save prediction (to database if connected, otherwise locally)
-        is_scenario = bool(scenario_note)
-        self.save_prediction(customer_data, probability, prediction, model_name, scenario_note, is_scenario)
-        
-        # Add to prediction history
-        prediction_record = {
-            'timestamp': datetime.now(),
-            'customer_id': customer_data.get('customer_id', 'Unknown'),
-            'probability': probability,
-            'prediction': prediction,
-            'model': model_name,
-            'scenario_note': scenario_note,
-            'recommendations': recommendations
-        }
-        self.prediction_history.append(prediction_record)
-        
-        return probability, prediction, recommendations
-
-
-    def __init__(self, db_config=None):
-        self.db_config = db_config or {
-            'host': 'localhost',
-            'database': 'churn_prediction',
-            'user': 'postgres',
-            'password': 'password',
-            'port': 5432
-        }
-        self.models = {}
-        self.scaler = StandardScaler()
-        self.label_encoders = {}
-        self.connection = None
-        self.is_db_connected = False
-        self.uploaded_data = None
-        self.recommendation_engine = EnhancedRecommendationEngine()
-        self.prediction_history = []
-        self.local_predictions = []  # Local storage for predictions when DB not connected
-        
-    def connect_db(self, db_config=None):
-        """Connect to PostgreSQL database with provided configuration"""
-        if db_config:
-            self.db_config = db_config
+        # Ensure timestamp is datetime
+        if 'prediction_timestamp' in df.columns:
+            df['prediction_timestamp'] = pd.to_datetime(df['prediction_timestamp'])
             
-        try:
-            self.connection = psycopg2.connect(**self.db_config)
-            self.is_db_connected = True
-            # Initialize tables
-            self.initialize_tables()
-            return True, "✅ Successfully connected to database!"
-        except Exception as e:
-            error_msg = f"❌ Database connection error: {e}"
-            print(error_msg)
-            self.is_db_connected = False
-            return False, error_msg
-            
-    def disconnect_db(self):
-        """Disconnect from database"""
-        if self.connection:
-            self.connection.close()
-            self.connection = None
-        self.is_db_connected = False
-        
-    def initialize_tables(self):
-        """Initialize database tables"""
-        if not self.is_db_connected:
-            return
-            
-        try:
-            cursor = self.connection.cursor()
-            # Execute schema creation
-            for statement in POSTGRES_SCHEMA.split(';'):
-                if statement.strip():
-                    cursor.execute(statement)
-            self.connection.commit()
-            cursor.close()
-        except Exception as e:
-            print(f"Error initializing tables: {e}")
-    
-    def save_prediction(self, customer_data, probability, prediction, model_name, scenario_note, is_scenario):
-        """Save prediction to database or local storage"""
-        prediction_record = {
-            'timestamp': datetime.now(),
-            'customer_id': customer_data.get('customer_id', 'Unknown'),
-            'probability': probability,
-            'prediction': prediction,
-            'model': model_name,
-            'scenario_note': scenario_note,
-            'is_scenario': is_scenario,
-            'customer_data': customer_data.copy()  # Store a copy for local use
-        }
-        
-        if self.is_db_connected:
-            try:
-                cursor = self.connection.cursor()
-                
-                # First, insert or update customer data
-                cursor.execute("""
-                    INSERT INTO customers 
-                    (customer_id, credit_score, gender, age, tenure, balance, 
-                     products_number, credit_card, active_member, estimated_salary, churn)
-                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-                    ON CONFLICT (customer_id) DO UPDATE SET
-                    credit_score = EXCLUDED.credit_score,
-                    gender = EXCLUDED.gender,
-                    age = EXCLUDED.age,
-                    tenure = EXCLUDED.tenure,
-                    balance = EXCLUDED.balance,
-                    products_number = EXCLUDED.products_number,
-                    credit_card = EXCLUDED.credit_card,
-                    active_member = EXCLUDED.active_member,
-                    estimated_salary = EXCLUDED.estimated_salary,
-                    churn = EXCLUDED.churn
-                """, (
-                    customer_data.get('customer_id', 1),
-                    customer_data['credit_score'],
-                    customer_data['gender'],
-                    customer_data['age'],
-                    customer_data['tenure'],
-                    customer_data['balance'],
-                    customer_data['products_number'],
-                    customer_data['credit_card'],
-                    customer_data['active_member'],
-                    customer_data['estimated_salary'],
-                    prediction
-                ))
-                
-                # Then save prediction
-                cursor.execute("""
-                    INSERT INTO predictions 
-                    (customer_id, churn_probability, predicted_churn, model_used, scenario_note, is_scenario)
-                    VALUES (%s, %s, %s, %s, %s, %s)
-                """, (
-                    customer_data.get('customer_id', 1),
-                    probability,
-                    prediction,
-                    model_name,
-                    scenario_note,
-                    is_scenario
-                ))
-                
-                self.connection.commit()
-                cursor.close()
-            except Exception as e:
-                print(f"Error saving prediction to database: {e}")
-                # Fallback to local storage
-                self.local_predictions.append(prediction_record)
-        else:
-            # Save locally when no database connection
-            self.local_predictions.append(prediction_record)
-        
-        # Always add to prediction history for current session
-        self.prediction_history.append(prediction_record)
-    
-    def get_prediction_history(self, limit=50):
-        """Retrieve prediction history from database or local storage"""
-        if self.is_db_connected:
-            try:
-                query = """
-                    SELECT p.prediction_id, p.customer_id, p.prediction_timestamp, 
-                           p.churn_probability, p.predicted_churn, p.model_used,
-                           p.scenario_note, p.is_scenario,
-                           c.credit_score, c.age, c.balance, c.gender, c.tenure,
-                           c.products_number, c.credit_card, c.active_member, c.estimated_salary
-                    FROM predictions p
-                    JOIN customers c ON p.customer_id = c.customer_id
-                    ORDER BY p.prediction_timestamp DESC
-                    LIMIT %s
-                """
-                df = pd.read_sql(query, self.connection, params=(limit,))
-                return df
-            except Exception as e:
-                print(f"Error retrieving prediction history from database: {e}")
-                # Fallback to local storage
-                return self._get_local_prediction_history(limit)
-        else:
-            # Use local storage when no database connection
-            return self._get_local_prediction_history(limit)
+        return df
     
     def _get_local_prediction_history(self, limit=50):
         """Get prediction history from local storage"""
@@ -848,7 +628,7 @@ class EnhancedChurnPredictor:
         
         # Convert local predictions to DataFrame
         history_data = []
-        for pred in self.local_predictions[-limit:]:  # Get most recent predictions
+        for pred in self.local_predictions[-limit:]:
             history_data.append({
                 'prediction_id': len(history_data) + 1,
                 'customer_id': pred['customer_id'],
@@ -929,7 +709,7 @@ class EnhancedChurnPredictor:
         return probability, prediction, recommendations
 
 # =============================================================================
-# ENHANCED STREAMLIT DASHBOARD
+# ENHANCED STREAMLIT DASHBOARD (SQLITE VERSION)
 # =============================================================================
 
 def setup_streamlit_app():
@@ -972,13 +752,13 @@ def show_data_management(predictor):
     """Enhanced data upload and database connection"""
     st.header("📊 Data Management")
     
-    tab1, tab2 = st.tabs(["📁 Upload CSV Data", "🗄️ Database Connection"])
+    tab1, tab2 = st.tabs(["📁 Upload CSV Data", "🗄️ SQLite Database"])
     
     with tab1:
         show_csv_upload(predictor)
     
     with tab2:
-        show_database_connection(predictor)
+        show_sqlite_connection(predictor)
 
 def show_csv_upload(predictor):
     """Display CSV upload functionality"""
@@ -1031,38 +811,25 @@ def show_csv_upload(predictor):
                 if results:
                     st.session_state.training_results = results
                     st.success("✅ Models trained successfully!")
-                    st.balloons()
-        
+                    
         except Exception as e:
             st.error(f"❌ Error reading file: {e}")
 
-# =============================================================================
-# UPDATED MAIN FUNCTION WITH BETTER DB SETUP GUIDANCE
-# =============================================================================
-
-def show_database_connection(predictor):
-    """Display database connection interface - UPDATED"""
-    st.subheader("🗄️ Database Connection")
+def show_sqlite_connection(predictor):
+    """Display SQLite database connection interface"""
+    st.subheader("🗄️ SQLite Database Connection")
     
     col1, col2 = st.columns([2, 1])
     
     with col1:
         with st.form("db_connection_form"):
-            st.write("Enter database connection details:")
+            st.write("SQLite Database Configuration:")
             
-            col1, col2 = st.columns(2)
-            with col1:
-                host = st.text_input("Host", value="localhost")
-                database = st.text_input("Database", value="churn_prediction")
-            with col2:
-                user = st.text_input("Username", value="postgres")
-                password = st.text_input("Password", type="password", value="password")
-                port = st.number_input("Port", value=5432)
+            db_path = st.text_input("Database Path", value="churn_prediction.db")
+            create_new = st.checkbox("Create new database if it doesn't exist", value=True)
             
-            if st.form_submit_button("🔗 Connect to Database", use_container_width=True):
-                db_config = {'host': host, 'database': database, 'user': user, 
-                           'password': password, 'port': port}
-                success, message = predictor.connect_db(db_config)
+            if st.form_submit_button("🔗 Connect to SQLite Database", use_container_width=True):
+                success, message = predictor.connect_db(db_path)
                 if success:
                     st.success(message)
                     # Transfer local predictions to database if any exist
@@ -1090,7 +857,7 @@ def show_database_connection(predictor):
     with col2:
         st.subheader("Connection Status")
         if predictor.is_db_connected:
-            st.success("✅ Connected")
+            st.success("✅ Connected to SQLite")
             try:
                 # Test data access
                 df = predictor.load_data()
@@ -1110,26 +877,19 @@ def show_database_connection(predictor):
             - Data resets on app restart
             """)
             
-        # Database setup guide
-        with st.expander("📋 Database Setup Guide"):
+        # SQLite info
+        with st.expander("📋 SQLite Information"):
             st.markdown("""
-            **To enable permanent prediction storage:**
+            **SQLite Advantages:**
+            - No server setup required
+            - Single file database
+            - Built-in Python support
+            - Perfect for local development
             
-            1. **Install PostgreSQL**
-            ```bash
-            # Ubuntu
-            sudo apt-get install postgresql postgresql-contrib
-            
-            # Or use Docker
-            docker run --name churn-db -e POSTGRES_PASSWORD=password -d -p 5432:5432 postgres
-            ```
-            
-            2. **Create Database**
-            ```sql
-            CREATE DATABASE churn_prediction;
-            ```
-            
-            3. **Update connection details above**
+            **Database Location:**
+            - Created in current directory
+            - Portable and easy to backup
+            - Compatible with most SQL tools
             """)
 
 def show_dashboard(predictor):
@@ -1140,11 +900,11 @@ def show_dashboard(predictor):
     
     # Data source info
     if predictor.uploaded_data is not None and not predictor.uploaded_data.empty:
-          source_info = "📁 Uploaded CSV" 
-    elif  predictor.is_db_connected:
-        source_info="🗄️ Database"
+        source_info = "📁 Uploaded CSV" 
+    elif predictor.is_db_connected:
+        source_info = "🗄️ SQLite Database"
     else:
-        source_info="🎲 Sample Data"
+        source_info = "🎲 Sample Data"
     st.info(f"**Data Source:** {source_info} | **Total Records:** {len(df):,}")
     
     # Key metrics
@@ -1193,8 +953,6 @@ def show_dashboard(predictor):
     
     with tab3:
         show_cohort_analysis(filtered_df)
-    
-   
     
     with tab4:
         if 'training_results' in st.session_state:
@@ -1610,16 +1368,14 @@ def show_scenario_analysis(predictor):
             
             for change in changes:
                 st.write(f"• {change}")
-# =============================================================================
-#  PREDICTION HISTORY DISPLAY
-# =============================================================================
+
 def show_prediction_history(predictor):
-    """Display prediction history - UPDATED VERSION"""
+    """Display prediction history """
     st.subheader("📋 Prediction History")
     
     # Show connection status
     if predictor.is_db_connected:
-        st.success("🗄️ Connected to database - predictions are being saved permanently")
+        st.success("🗄️ Connected to SQLite database - predictions are being saved permanently")
     else:
         st.info("💻 Using local storage - predictions will be saved for this session only")
     
@@ -1629,18 +1385,23 @@ def show_prediction_history(predictor):
         st.info("No prediction history found. Make some predictions first!")
         return
     
+    # Ensure prediction_timestamp is datetime
+    if 'prediction_timestamp' in history_df.columns:
+        history_df['prediction_timestamp'] = pd.to_datetime(history_df['prediction_timestamp'])
+    
     # Filters
     col1, col2, col3 = st.columns(3)
     with col1:
         show_scenarios = st.checkbox("Show only scenarios", value=False)
     with col2:
-        # Date filter
-        if not history_df.empty:
+        # Date filter - handle empty dataframe case
+        if not history_df.empty and 'prediction_timestamp' in history_df.columns:
             min_date = history_df['prediction_timestamp'].min().date()
             max_date = history_df['prediction_timestamp'].max().date()
             date_range = st.date_input("Date Range", [min_date, max_date])
         else:
             date_range = st.date_input("Date Range", [])
+            min_date = max_date = None
     with col3:
         risk_filter = st.selectbox("Risk Level", ["All", "Critical (80%+)", "High (60%+)", "Medium (40%+)", "Low (0-40%)"])
     
@@ -1662,9 +1423,13 @@ def show_prediction_history(predictor):
         else:
             filtered_df = filtered_df[filtered_df['churn_probability'] >= threshold]
     
-    # Apply date filter if range is selected
-    if len(date_range) == 2:
+    # Apply date filter if range is selected and we have timestamp data
+    if len(date_range) == 2 and 'prediction_timestamp' in filtered_df.columns and not filtered_df.empty:
         start_date, end_date = date_range
+        # Ensure the timestamp column is datetime for comparison
+        filtered_df = filtered_df.copy()
+        filtered_df['prediction_timestamp'] = pd.to_datetime(filtered_df['prediction_timestamp'])
+        
         filtered_df = filtered_df[
             (filtered_df['prediction_timestamp'].dt.date >= start_date) & 
             (filtered_df['prediction_timestamp'].dt.date <= end_date)
@@ -1675,8 +1440,12 @@ def show_prediction_history(predictor):
         return
     
     # Display history with better formatting
+    display_df = filtered_df.copy()
+    if 'prediction_timestamp' in display_df.columns:
+        display_df['prediction_timestamp'] = pd.to_datetime(display_df['prediction_timestamp']).dt.strftime('%Y-%m-%d %H:%M:%S')
+    
     st.dataframe(
-        filtered_df.style.format({
+        display_df.style.format({
             'churn_probability': '{:.2%}',
             'balance': 'KES {:,.0f}',
             'estimated_salary': 'KES {:,.0f}'
@@ -1700,12 +1469,16 @@ def show_prediction_history(predictor):
         scenario_count = len(filtered_df[filtered_df['is_scenario'] == True])
         st.metric("Scenario Analyses", scenario_count)
     
-    # Recent predictions chart
-    if len(filtered_df) > 1:
+    # Recent predictions chart - only if we have timestamp data
+    if len(filtered_df) > 1 and 'prediction_timestamp' in filtered_df.columns:
         st.subheader("📈 Recent Prediction Trends")
         
+        # Ensure timestamp is datetime for sorting
+        chart_df = filtered_df.copy()
+        chart_df['prediction_timestamp'] = pd.to_datetime(chart_df['prediction_timestamp'])
+        
         # Create a time series of predictions
-        recent_predictions = filtered_df.sort_values('prediction_timestamp').tail(20)
+        recent_predictions = chart_df.sort_values('prediction_timestamp').tail(20)
         
         fig = px.line(recent_predictions, x='prediction_timestamp', y='churn_probability',
                      title='Recent Churn Probability Trends',
@@ -1723,7 +1496,7 @@ def show_user_guide():
         This system helps bank staff identify customers at risk of churning and provides actionable insights for retention.
         
         **Quick Start:**
-        1. **Data Setup**: Upload your customer data CSV or connect to PostgreSQL database
+        1. **Data Setup**: Upload your customer data CSV or connect to SQLite database
         2. **Model Training**: Train the machine learning models with your data
         3. **Predictions**: Analyze individual customers and run scenarios
         4. **Dashboard**: Explore insights through interactive visualizations
@@ -1744,9 +1517,9 @@ def show_user_guide():
         - `estimated_salary`: Annual salary
         - `churn`: 1/0 (for training)
         
-        **Database Setup:**
-        - PostgreSQL database with the provided schema
-        - Connection details: host, database, username, password
+        **SQLite Database:**
+        - No setup required - automatically creates database file
+        - All data stored in single file for portability
         """)
     
     with st.expander("🎯 Making Predictions"):
@@ -1814,7 +1587,7 @@ def main():
     st.sidebar.info("""
     **System Status:**
     - Models: ✅ Ready
-    - Database: ✅ Connected
+    - Database: ✅ SQLite
     - Predictions: ✅ Active
     """)
 
