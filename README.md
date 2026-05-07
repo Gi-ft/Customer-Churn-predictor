@@ -1,6 +1,6 @@
 ﻿# Customer Churn Predictor
 
-A simple machine learning project for customer churn prediction using Python.
+A machine learning project for customer churn prediction using Python.
 
 ## Project Overview
 
