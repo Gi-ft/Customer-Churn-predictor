@@ -6,13 +6,21 @@ import plotly.graph_objects as go
 from sklearn.model_selection import train_test_split
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.linear_model import LogisticRegression
-from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, roc_auc_score, confusion_matrix
+from sklearn.metrics import (
+    accuracy_score,
+    precision_score,
+    recall_score,
+    f1_score,
+    roc_auc_score,
+    confusion_matrix,
+)
 from sklearn.preprocessing import StandardScaler, LabelEncoder
 import sqlite3
 import warnings
 import io
 from datetime import datetime
-warnings.filterwarnings('ignore')
+
+warnings.filterwarnings("ignore")
 
 # =============================================================================
 # SQLITE DATABASE SCHEMA
@@ -76,174 +84,203 @@ CREATE TABLE IF NOT EXISTS retention_actions (
 # ENHANCED RECOMMENDATION ENGINE
 # =============================================================================
 
+
 class EnhancedRecommendationEngine:
     def __init__(self):
         self.recommendations = {
-            'critical_risk': {
-                'title': "🚨 CRITICAL RISK - Immediate Action Required",
-                'actions': [
+            "critical_risk": {
+                "title": "🚨 CRITICAL RISK - Immediate Action Required",
+                "actions": [
                     "🔹 Executive-level intervention required",
                     "🔹 Personal phone call from branch manager within 4 hours",
                     "🔹 Customized retention package with significant fee waivers",
                     "🔹 Emergency product review and optimization",
                     "🔹 Dedicated relationship manager assignment",
                     "🔹 Premium service tier activation for 6 months free",
-                    "🔹 In-person meeting scheduling within 24 hours"
+                    "🔹 In-person meeting scheduling within 24 hours",
                 ],
-                'incentives': [
+                "incentives": [
                     "💰 100% fee waiver for 3 months + 50% for next 3 months",
                     "🎁 Exclusive premium credit card with enhanced benefits",
                     "📈 Priority banking status with dedicated support line",
                     "🛡️ Complimentary insurance products for 1 year",
-                    "💳 Credit limit increase with preferential rates"
-                ]
+                    "💳 Credit limit increase with preferential rates",
+                ],
             },
-            'high_risk': {
-                'title': "🔴 HIGH RISK - Urgent Action Required",
-                'actions': [
+            "high_risk": {
+                "title": "🔴 HIGH RISK - Urgent Action Required",
+                "actions": [
                     "🔹 Assign dedicated relationship manager for personalized service",
                     "🔹 Offer exclusive retention package with fee waivers",
                     "🔹 Conduct urgent satisfaction call within 24 hours",
                     "🔹 Provide premium service tier for 3 months free",
                     "🔹 Schedule in-person meeting with branch manager",
                     "🔹 Offer personalized financial health check",
-                    "🔹 Implement immediate issue resolution protocol"
+                    "🔹 Implement immediate issue resolution protocol",
                 ],
-                'incentives': [
+                "incentives": [
                     "💰 50% discount on service fees for 6 months",
                     "🎁 Free premium credit card with enhanced benefits",
                     "📈 Higher interest rates on savings accounts",
                     "🛡️ Complimentary insurance products",
-                    "💳 Increased credit limits"
-                ]
+                    "💳 Increased credit limits",
+                ],
             },
-            'medium_risk': {
-                'title': "🟡 MEDIUM RISK - Proactive Engagement Needed",
-                'actions': [
+            "medium_risk": {
+                "title": "🟡 MEDIUM RISK - Proactive Engagement Needed",
+                "actions": [
                     "🔸 Schedule proactive check-in call within 48 hours",
                     "🔸 Offer product bundle discounts",
                     "🔸 Send personalized financial insights report",
                     "🔸 Invite to exclusive customer webinars",
                     "🔸 Provide cross-selling opportunities",
                     "🔸 Implement regular satisfaction surveys",
-                    "🔸 Offer financial planning consultation"
+                    "🔸 Offer financial planning consultation",
                 ],
-                'incentives': [
+                "incentives": [
                     "💰 25% discount on service fees for 3 months",
                     "🎁 Free financial planning session",
                     "📊 Personalized investment recommendations",
                     "🔄 Product upgrade offers",
-                    "📱 Enhanced digital banking features"
-                ]
+                    "📱 Enhanced digital banking features",
+                ],
             },
-            'low_risk': {
-                'title': "🟢 LOW RISK - Retention & Growth Focus",
-                'actions': [
+            "low_risk": {
+                "title": "🟢 LOW RISK - Retention & Growth Focus",
+                "actions": [
                     "✅ Continue regular engagement cadence",
                     "✅ Monitor for early warning signs",
                     "✅ Provide exceptional service quality",
                     "✅ Offer loyalty rewards program",
                     "✅ Cross-sell complementary products",
                     "✅ Encourage digital adoption",
-                    "✅ Share educational content regularly"
+                    "✅ Share educational content regularly",
                 ],
-                'incentives': [
+                "incentives": [
                     "💰 Loyalty points accumulation",
                     "🎁 Referral bonus programs",
                     "📈 Regular product updates",
                     "🌐 Exclusive online content access",
-                    "📧 Personalized financial newsletters"
-                ]
-            }
+                    "📧 Personalized financial newsletters",
+                ],
+            },
         }
-    
+
     def get_recommendations(self, churn_probability, customer_data):
         """Get personalized recommendations based on churn probability and customer profile"""
         if churn_probability >= 0.8:
-            risk_level = 'critical_risk'
+            risk_level = "critical_risk"
         elif churn_probability >= 0.6:
-            risk_level = 'high_risk'
+            risk_level = "high_risk"
         elif churn_probability >= 0.4:
-            risk_level = 'medium_risk'
+            risk_level = "medium_risk"
         else:
-            risk_level = 'low_risk'
-        
+            risk_level = "low_risk"
+
         base_recommendations = self.recommendations[risk_level]
-        personalized_recommendations = self._get_personalized_recommendations(customer_data, risk_level)
-        
+        personalized_recommendations = self._get_personalized_recommendations(
+            customer_data, risk_level
+        )
+
         return {
-            'risk_level': risk_level,
-            'title': base_recommendations['title'],
-            'general_actions': base_recommendations['actions'],
-            'incentives': base_recommendations['incentives'],
-            'personalized_recommendations': personalized_recommendations,
-            'risk_score': churn_probability
+            "risk_level": risk_level,
+            "title": base_recommendations["title"],
+            "general_actions": base_recommendations["actions"],
+            "incentives": base_recommendations["incentives"],
+            "personalized_recommendations": personalized_recommendations,
+            "risk_score": churn_probability,
         }
-    
+
     def _get_personalized_recommendations(self, customer_data, risk_level):
         """Generate personalized recommendations based on customer characteristics"""
         personalized = []
-        
+
         # Age-based recommendations
-        age = customer_data.get('age', 0)
+        age = customer_data.get("age", 0)
         if age > 60:
-            personalized.append("👴 **Senior Focus**: Offer retirement planning services and senior-specific benefits package")
+            personalized.append(
+                "👴 **Senior Focus**: Offer retirement planning services and senior-specific benefits package"
+            )
         elif age < 30:
-            personalized.append("👶 **Youth Focus**: Emphasize digital banking features, student benefits, and financial education")
-        
+            personalized.append(
+                "👶 **Youth Focus**: Emphasize digital banking features, student benefits, and financial education"
+            )
+
         # Balance-based recommendations
-        balance = customer_data.get('balance', 0)
+        balance = customer_data.get("balance", 0)
         if balance < 1000:
-            personalized.append("💸 **Low Balance Strategy**: Offer budgeting tools, micro-saving features, and savings account incentives")
+            personalized.append(
+                "💸 **Low Balance Strategy**: Offer budgeting tools, micro-saving features, and savings account incentives"
+            )
         elif balance > 50000:
-            personalized.append("💰 **High Value Focus**: Provide premium investment opportunities, wealth management, and exclusive events")
-        
+            personalized.append(
+                "💰 **High Value Focus**: Provide premium investment opportunities, wealth management, and exclusive events"
+            )
+
         # Credit score recommendations
-        credit_score = customer_data.get('credit_score', 0)
+        credit_score = customer_data.get("credit_score", 0)
         if credit_score < 600:
-            personalized.append("📉 **Credit Building**: Offer secured credit products, financial education, and credit monitoring services")
+            personalized.append(
+                "📉 **Credit Building**: Offer secured credit products, financial education, and credit monitoring services"
+            )
         elif credit_score > 750:
-            personalized.append("📈 **Premium Credit**: Provide premium credit products, exclusive offers, and relationship pricing")
-        
+            personalized.append(
+                "📈 **Premium Credit**: Provide premium credit products, exclusive offers, and relationship pricing"
+            )
+
         # Activity-based recommendations
-        if not customer_data.get('active_member', True):
-            personalized.append("🔕 **Re-engagement Campaign**: Special reactivation offers and personalized outreach program")
-        
+        if not customer_data.get("active_member", True):
+            personalized.append(
+                "🔕 **Re-engagement Campaign**: Special reactivation offers and personalized outreach program"
+            )
+
         # Product usage recommendations
-        products_number = customer_data.get('products_number', 1)
+        products_number = customer_data.get("products_number", 1)
         if products_number == 1:
-            personalized.append("📦 **Cross-sell Opportunity**: Target with complementary banking products based on usage patterns")
+            personalized.append(
+                "📦 **Cross-sell Opportunity**: Target with complementary banking products based on usage patterns"
+            )
         elif products_number >= 3:
-            personalized.append("🎯 **Loyalty Enhancement**: Focus on relationship benefits and exclusive multi-product discounts")
-        
+            personalized.append(
+                "🎯 **Loyalty Enhancement**: Focus on relationship benefits and exclusive multi-product discounts"
+            )
+
         # Tenure-based recommendations
-        tenure = customer_data.get('tenure', 0)
+        tenure = customer_data.get("tenure", 0)
         if tenure < 1:
-            personalized.append("🆕 **Onboarding Boost**: Enhanced onboarding experience with welcome benefits and education")
+            personalized.append(
+                "🆕 **Onboarding Boost**: Enhanced onboarding experience with welcome benefits and education"
+            )
         elif tenure > 5:
-            personalized.append("🏆 **Loyalty Recognition**: Implement loyalty recognition program with exclusive long-term benefits")
-        
+            personalized.append(
+                "🏆 **Loyalty Recognition**: Implement loyalty recognition program with exclusive long-term benefits"
+            )
+
         return personalized
 
     def generate_export_data(self, customer_data, recommendations):
         """Generate data for export"""
         export_data = {
-            'Customer ID': customer_data.get('customer_id', 'N/A'),
-            'Churn Probability': f"{recommendations['risk_score']:.2%}",
-            'Risk Level': recommendations['risk_level'].replace('_', ' ').title(),
-            'General Actions': '; '.join(recommendations['general_actions']),
-            'Incentives': '; '.join(recommendations['incentives']),
-            'Personalized Recommendations': '; '.join(recommendations['personalized_recommendations']),
-            'Timestamp': datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            "Customer ID": customer_data.get("customer_id", "N/A"),
+            "Churn Probability": f"{recommendations['risk_score']:.2%}",
+            "Risk Level": recommendations["risk_level"].replace("_", " ").title(),
+            "General Actions": "; ".join(recommendations["general_actions"]),
+            "Incentives": "; ".join(recommendations["incentives"]),
+            "Personalized Recommendations": "; ".join(
+                recommendations["personalized_recommendations"]
+            ),
+            "Timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
         }
         return export_data
+
 
 # =============================================================================
 # ENHANCED CHURN PREDICTOR CLASS (SQLITE VERSION)
 # =============================================================================
 
+
 class EnhancedChurnPredictor:
-    def __init__(self, db_path='churn_prediction.db'):
+    def __init__(self, db_path="churn_prediction.db"):
         self.db_path = db_path
         self.models = {}
         self.scaler = StandardScaler()
@@ -254,12 +291,12 @@ class EnhancedChurnPredictor:
         self.recommendation_engine = EnhancedRecommendationEngine()
         self.prediction_history = []
         self.local_predictions = []
-        
+
     def connect_db(self, db_path=None):
         """Connect to SQLite database"""
         if db_path:
             self.db_path = db_path
-            
+
         try:
             self.connection = sqlite3.connect(self.db_path, check_same_thread=False)
             self.connection.row_factory = sqlite3.Row
@@ -272,35 +309,35 @@ class EnhancedChurnPredictor:
             print(error_msg)
             self.is_db_connected = False
             return False, error_msg
-            
+
     def disconnect_db(self):
         """Disconnect from database"""
         if self.connection:
             self.connection.close()
             self.connection = None
         self.is_db_connected = False
-        
+
     def initialize_tables(self):
         """Initialize database tables"""
         if not self.is_db_connected:
             return
-            
+
         try:
             cursor = self.connection.cursor()
             # Execute schema creation
-            for statement in SQLITE_SCHEMA.split(';'):
+            for statement in SQLITE_SCHEMA.split(";"):
                 if statement.strip():
                     cursor.execute(statement)
             self.connection.commit()
             cursor.close()
         except Exception as e:
             print(f"Error initializing tables: {e}")
-    
+
     def load_data(self):
         """Load data from uploaded CSV, SQLite, or generate sample data"""
         if self.uploaded_data is not None:
             return self.uploaded_data
-            
+
         if self.is_db_connected:
             try:
                 query = "SELECT * FROM customers"
@@ -308,17 +345,19 @@ class EnhancedChurnPredictor:
                 if not df.empty:
                     return df
                 else:
-                    st.info("📊 Database is connected but no customer data found. Using sample data.")
+                    st.info(
+                        "📊 Database is connected but no customer data found. Using sample data."
+                    )
             except Exception as e:
                 print(f"Error loading data from database: {e}")
-        
+
         # Use the provided dataset structure
         return self.generate_sample_data()
-    
+
     def set_uploaded_data(self, df):
         """Set uploaded CSV data"""
         self.uploaded_data = df
-        
+
     def generate_sample_data(self, n_samples=10000):
         """Generate synthetic customer data using Python random only"""
         import random
@@ -328,102 +367,120 @@ class EnhancedChurnPredictor:
             random.seed(42)
 
             data = {
-                'customer_id': list(range(1, n_samples + 1)),
-                'credit_score': [random.randint(300, 850) for _ in range(n_samples)],
-                'gender': [random.choice(['Male', 'Female']) for _ in range(n_samples)],
-                'age': [random.randint(18, 80) for _ in range(n_samples)],
-                'tenure': [random.randint(0, 10) for _ in range(n_samples)],
-                'balance': [random.uniform(0, 250000) for _ in range(n_samples)],
-                'products_number': [random.choice([1, 2, 3, 4]) for _ in range(n_samples)],
-                'credit_card': [random.choice([True, False]) for _ in range(n_samples)],
-                'active_member': [random.choice([True, False]) for _ in range(n_samples)],
-                'estimated_salary': [random.uniform(0, 200000) for _ in range(n_samples)],
+                "customer_id": list(range(1, n_samples + 1)),
+                "credit_score": [random.randint(300, 850) for _ in range(n_samples)],
+                "gender": [random.choice(["Male", "Female"]) for _ in range(n_samples)],
+                "age": [random.randint(18, 80) for _ in range(n_samples)],
+                "tenure": [random.randint(0, 10) for _ in range(n_samples)],
+                "balance": [random.uniform(0, 250000) for _ in range(n_samples)],
+                "products_number": [
+                    random.choice([1, 2, 3, 4]) for _ in range(n_samples)
+                ],
+                "credit_card": [random.choice([True, False]) for _ in range(n_samples)],
+                "active_member": [
+                    random.choice([True, False]) for _ in range(n_samples)
+                ],
+                "estimated_salary": [
+                    random.uniform(0, 200000) for _ in range(n_samples)
+                ],
             }
 
             df = pd.DataFrame(data)
 
             churn_conditions = (
-                (df['age'] > 60) |
-                (df['balance'] < 1000) |
-                (~df['active_member']) |
-                (df['credit_score'] < 600)
+                (df["age"] > 60)
+                | (df["balance"] < 1000)
+                | (~df["active_member"])
+                | (df["credit_score"] < 600)
             )
-            df['churn'] = churn_conditions.astype(int)
+            df["churn"] = churn_conditions.astype(int)
 
             return df
 
         except Exception:
             # Fallback: create minimal data
-            return pd.DataFrame({
-                'customer_id': [1, 2, 3],
-                'credit_score': [650, 720, 580],
-                'gender': ['Male', 'Female', 'Male'],
-                'age': [45, 32, 55],
-                'tenure': [3, 5, 1],
-                'balance': [50000, 75000, 500],
-                'products_number': [2, 1, 3],
-                'credit_card': [True, False, True],
-                'active_member': [True, True, False],
-                'estimated_salary': [75000, 80000, 45000],
-                'churn': [0, 0, 1]
-            })
-    
+            return pd.DataFrame(
+                {
+                    "customer_id": [1, 2, 3],
+                    "credit_score": [650, 720, 580],
+                    "gender": ["Male", "Female", "Male"],
+                    "age": [45, 32, 55],
+                    "tenure": [3, 5, 1],
+                    "balance": [50000, 75000, 500],
+                    "products_number": [2, 1, 3],
+                    "credit_card": [True, False, True],
+                    "active_member": [True, True, False],
+                    "estimated_salary": [75000, 80000, 45000],
+                    "churn": [0, 0, 1],
+                }
+            )
+
     def preprocess_data(self, df):
         """Preprocess the data for training"""
         df_processed = df.copy()
-        
+
         # Encode categorical variables
-        categorical_columns = ['gender']
+        categorical_columns = ["gender"]
         for col in categorical_columns:
             if col in df_processed.columns:
                 if col not in self.label_encoders:
                     self.label_encoders[col] = LabelEncoder()
                 self.label_encoders[col].fit(df_processed[col].astype(str))
-                df_processed[col] = self.label_encoders[col].transform(df_processed[col].astype(str))
-        
+                df_processed[col] = self.label_encoders[col].transform(
+                    df_processed[col].astype(str)
+                )
+
         # Select features
         feature_columns = [
-            'credit_score', 'gender', 'age', 'tenure', 
-            'balance', 'products_number', 'credit_card', 
-            'active_member', 'estimated_salary'
+            "credit_score",
+            "gender",
+            "age",
+            "tenure",
+            "balance",
+            "products_number",
+            "credit_card",
+            "active_member",
+            "estimated_salary",
         ]
-        
-        available_features = [col for col in feature_columns if col in df_processed.columns]
-        
+
+        available_features = [
+            col for col in feature_columns if col in df_processed.columns
+        ]
+
         X = df_processed[available_features]
-        y = df_processed['churn']
-        
+        y = df_processed["churn"]
+
         return X, y, available_features
-    
+
     def train_models(self):
         """Train both Random Forest and Logistic Regression models with enhanced metrics"""
         df = self.load_data()
-        
-        if 'churn' not in df.columns:
+
+        if "churn" not in df.columns:
             st.error("❌ Uploaded data must contain a 'churn' column for training!")
             return {}
-            
+
         X, y, feature_columns = self.preprocess_data(df)
-        
+
         # Split data
         X_train, X_test, y_train, y_test = train_test_split(
             X, y, test_size=0.2, random_state=42, stratify=y
         )
-        
+
         # Scale features for Logistic Regression
         X_train_scaled = self.scaler.fit_transform(X_train)
         X_test_scaled = self.scaler.transform(X_test)
-        
+
         # Initialize models
         models = {
-            'Random Forest': RandomForestClassifier(n_estimators=100, random_state=42),
-            'Logistic Regression': LogisticRegression(random_state=42, max_iter=1000)
+            "Random Forest": RandomForestClassifier(n_estimators=100, random_state=42),
+            "Logistic Regression": LogisticRegression(random_state=42, max_iter=1000),
         }
-        
+
         results = {}
-        
+
         for name, model in models.items():
-            if name == 'Logistic Regression':
+            if name == "Logistic Regression":
                 model.fit(X_train_scaled, y_train)
                 y_pred = model.predict(X_test_scaled)
                 y_pred_proba = model.predict_proba(X_test_scaled)[:, 1]
@@ -431,110 +488,131 @@ class EnhancedChurnPredictor:
                 model.fit(X_train, y_train)
                 y_pred = model.predict(X_test)
                 y_pred_proba = model.predict_proba(X_test)[:, 1]
-            
+
             # Calculate enhanced metrics
             accuracy = accuracy_score(y_test, y_pred)
             precision = precision_score(y_test, y_pred, zero_division=0)
             recall = recall_score(y_test, y_pred, zero_division=0)
             f1 = f1_score(y_test, y_pred, zero_division=0)
             roc_auc = roc_auc_score(y_test, y_pred_proba)
-            
+
             results[name] = {
-                'model': model,
-                'accuracy': accuracy,
-                'precision': precision,
-                'recall': recall,
-                'f1': f1,
-                'roc_auc': roc_auc,
-                'feature_importance': None,
-                'y_test': y_test,
-                'y_pred_proba': y_pred_proba,
-                'y_pred': y_pred
+                "model": model,
+                "accuracy": accuracy,
+                "precision": precision,
+                "recall": recall,
+                "f1": f1,
+                "roc_auc": roc_auc,
+                "feature_importance": None,
+                "y_test": y_test,
+                "y_pred_proba": y_pred_proba,
+                "y_pred": y_pred,
             }
-            
+
             # Get feature importance for Random Forest
-            if name == 'Random Forest':
-                feature_importance = pd.DataFrame({
-                    'feature': feature_columns,
-                    'importance': model.feature_importances_
-                }).sort_values('importance', ascending=False)
-                results[name]['feature_importance'] = feature_importance
-            
+            if name == "Random Forest":
+                feature_importance = pd.DataFrame(
+                    {
+                        "feature": feature_columns,
+                        "importance": model.feature_importances_,
+                    }
+                ).sort_values("importance", ascending=False)
+                results[name]["feature_importance"] = feature_importance
+
             self.models[name] = model
-            
+
             # Save performance to database
             self.save_model_performance(name, accuracy, precision, recall, f1, roc_auc)
-        
+
         return results
-    
-    def save_model_performance(self, model_name, accuracy, precision, recall, f1, roc_auc):
+
+    def save_model_performance(
+        self, model_name, accuracy, precision, recall, f1, roc_auc
+    ):
         """Save model performance to database"""
         if not self.is_db_connected:
             return
-            
+
         try:
             cursor = self.connection.cursor()
-            cursor.execute("""
+            cursor.execute(
+                """
                 INSERT INTO model_performance 
                 (model_name, accuracy, precision, recall, f1_score, roc_auc)
                 VALUES (?, ?, ?, ?, ?, ?)
-            """, (model_name, accuracy, precision, recall, f1, roc_auc))
+            """,
+                (model_name, accuracy, precision, recall, f1, roc_auc),
+            )
             self.connection.commit()
             cursor.close()
         except Exception as e:
             print(f"Error saving performance: {e}")
-    
-    def save_prediction(self, customer_data, probability, prediction, model_name, scenario_note, is_scenario):
+
+    def save_prediction(
+        self,
+        customer_data,
+        probability,
+        prediction,
+        model_name,
+        scenario_note,
+        is_scenario,
+    ):
         """Save prediction to database or local storage"""
         prediction_record = {
-            'timestamp': datetime.now(),
-            'customer_id': customer_data.get('customer_id', 'Unknown'),
-            'probability': probability,
-            'prediction': prediction,
-            'model': model_name,
-            'scenario_note': scenario_note,
-            'is_scenario': is_scenario,
-            'customer_data': customer_data.copy()
+            "timestamp": datetime.now(),
+            "customer_id": customer_data.get("customer_id", "Unknown"),
+            "probability": probability,
+            "prediction": prediction,
+            "model": model_name,
+            "scenario_note": scenario_note,
+            "is_scenario": is_scenario,
+            "customer_data": customer_data.copy(),
         }
-        
+
         if self.is_db_connected:
             try:
                 cursor = self.connection.cursor()
-                
+
                 # First, insert or update customer data
-                cursor.execute("""
+                cursor.execute(
+                    """
                     INSERT OR REPLACE INTO customers 
                     (customer_id, credit_score, gender, age, tenure, balance, 
                      products_number, credit_card, active_member, estimated_salary, churn)
                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                """, (
-                    customer_data.get('customer_id', 1),
-                    customer_data['credit_score'],
-                    customer_data['gender'],
-                    customer_data['age'],
-                    customer_data['tenure'],
-                    customer_data['balance'],
-                    customer_data['products_number'],
-                    customer_data['credit_card'],
-                    customer_data['active_member'],
-                    customer_data['estimated_salary'],
-                    prediction
-                ))
-                
+                """,
+                    (
+                        customer_data.get("customer_id", 1),
+                        customer_data["credit_score"],
+                        customer_data["gender"],
+                        customer_data["age"],
+                        customer_data["tenure"],
+                        customer_data["balance"],
+                        customer_data["products_number"],
+                        customer_data["credit_card"],
+                        customer_data["active_member"],
+                        customer_data["estimated_salary"],
+                        prediction,
+                    ),
+                )
+
                 # Then save prediction
-                cursor.execute("""
+                cursor.execute(
+                    """
                     INSERT INTO predictions 
                     (customer_id, churn_probability, predicted_churn, model_used, scenario_note, is_scenario)
                     VALUES (?, ?, ?, ?, ?, ?)
-                """, (
-                    customer_data.get('customer_id', 1),
-                    probability,
-                    prediction,
-                    model_name,
-                    scenario_note,
-                    is_scenario
-                ))
-                
+                """,
+                    (
+                        customer_data.get("customer_id", 1),
+                        probability,
+                        prediction,
+                        model_name,
+                        scenario_note,
+                        is_scenario,
+                    ),
+                )
+
                 self.connection.commit()
                 cursor.close()
             except Exception as e:
@@ -544,10 +622,10 @@ class EnhancedChurnPredictor:
         else:
             # Save locally when no database connection
             self.local_predictions.append(prediction_record)
-        
+
         # Always add to prediction history for current session
         self.prediction_history.append(prediction_record)
-    
+
     def get_prediction_history(self, limit=50):
         """Retrieve prediction history from database or local storage - FIXED VERSION"""
         if self.is_db_connected:
@@ -564,11 +642,13 @@ class EnhancedChurnPredictor:
                     LIMIT ?
                 """
                 df = pd.read_sql(query, self.connection, params=(limit,))
-                
+
                 # Convert timestamp to datetime
-                if 'prediction_timestamp' in df.columns:
-                    df['prediction_timestamp'] = pd.to_datetime(df['prediction_timestamp'])
-                    
+                if "prediction_timestamp" in df.columns:
+                    df["prediction_timestamp"] = pd.to_datetime(
+                        df["prediction_timestamp"]
+                    )
+
                 return df
             except Exception as e:
                 print(f"Error retrieving prediction history from database: {e}")
@@ -582,128 +662,161 @@ class EnhancedChurnPredictor:
         """Get prediction history from local storage - FIXED VERSION"""
         if not self.local_predictions:
             return pd.DataFrame()
-        
+
         # Convert local predictions to DataFrame
         history_data = []
         for pred in self.local_predictions[-limit:]:
-            history_data.append({
-                'prediction_id': len(history_data) + 1,
-                'customer_id': pred['customer_id'],
-                'prediction_timestamp': pred['timestamp'],
-                'churn_probability': pred['probability'],
-                'predicted_churn': pred['prediction'],
-                'model_used': pred['model'],
-                'scenario_note': pred['scenario_note'],
-                'is_scenario': pred['is_scenario'],
-                'credit_score': pred['customer_data'].get('credit_score', 0),
-                'age': pred['customer_data'].get('age', 0),
-                'balance': pred['customer_data'].get('balance', 0),
-                'gender': pred['customer_data'].get('gender', 'Unknown'),
-                'tenure': pred['customer_data'].get('tenure', 0),
-                'products_number': pred['customer_data'].get('products_number', 0),
-                'credit_card': pred['customer_data'].get('credit_card', False),
-                'active_member': pred['customer_data'].get('active_member', False),
-                'estimated_salary': pred['customer_data'].get('estimated_salary', 0)
-            })
-        
+            history_data.append(
+                {
+                    "prediction_id": len(history_data) + 1,
+                    "customer_id": pred["customer_id"],
+                    "prediction_timestamp": pred["timestamp"],
+                    "churn_probability": pred["probability"],
+                    "predicted_churn": pred["prediction"],
+                    "model_used": pred["model"],
+                    "scenario_note": pred["scenario_note"],
+                    "is_scenario": pred["is_scenario"],
+                    "credit_score": pred["customer_data"].get("credit_score", 0),
+                    "age": pred["customer_data"].get("age", 0),
+                    "balance": pred["customer_data"].get("balance", 0),
+                    "gender": pred["customer_data"].get("gender", "Unknown"),
+                    "tenure": pred["customer_data"].get("tenure", 0),
+                    "products_number": pred["customer_data"].get("products_number", 0),
+                    "credit_card": pred["customer_data"].get("credit_card", False),
+                    "active_member": pred["customer_data"].get("active_member", False),
+                    "estimated_salary": pred["customer_data"].get(
+                        "estimated_salary", 0
+                    ),
+                }
+            )
+
         df = pd.DataFrame(history_data)
-        
+
         # Ensure timestamp is datetime
-        if 'prediction_timestamp' in df.columns:
-            df['prediction_timestamp'] = pd.to_datetime(df['prediction_timestamp'])
-            
+        if "prediction_timestamp" in df.columns:
+            df["prediction_timestamp"] = pd.to_datetime(df["prediction_timestamp"])
+
         return df
-    
+
     def _get_local_prediction_history(self, limit=50):
         """Get prediction history from local storage"""
         if not self.local_predictions:
             return pd.DataFrame()
-        
+
         # Convert local predictions to DataFrame
         history_data = []
         for pred in self.local_predictions[-limit:]:
-            history_data.append({
-                'prediction_id': len(history_data) + 1,
-                'customer_id': pred['customer_id'],
-                'prediction_timestamp': pred['timestamp'],
-                'churn_probability': pred['probability'],
-                'predicted_churn': pred['prediction'],
-                'model_used': pred['model'],
-                'scenario_note': pred['scenario_note'],
-                'is_scenario': pred['is_scenario'],
-                'credit_score': pred['customer_data'].get('credit_score', 0),
-                'age': pred['customer_data'].get('age', 0),
-                'balance': pred['customer_data'].get('balance', 0),
-                'gender': pred['customer_data'].get('gender', 'Unknown'),
-                'tenure': pred['customer_data'].get('tenure', 0),
-                'products_number': pred['customer_data'].get('products_number', 0),
-                'credit_card': pred['customer_data'].get('credit_card', False),
-                'active_member': pred['customer_data'].get('active_member', False),
-                'estimated_salary': pred['customer_data'].get('estimated_salary', 0)
-            })
-        
+            history_data.append(
+                {
+                    "prediction_id": len(history_data) + 1,
+                    "customer_id": pred["customer_id"],
+                    "prediction_timestamp": pred["timestamp"],
+                    "churn_probability": pred["probability"],
+                    "predicted_churn": pred["prediction"],
+                    "model_used": pred["model"],
+                    "scenario_note": pred["scenario_note"],
+                    "is_scenario": pred["is_scenario"],
+                    "credit_score": pred["customer_data"].get("credit_score", 0),
+                    "age": pred["customer_data"].get("age", 0),
+                    "balance": pred["customer_data"].get("balance", 0),
+                    "gender": pred["customer_data"].get("gender", "Unknown"),
+                    "tenure": pred["customer_data"].get("tenure", 0),
+                    "products_number": pred["customer_data"].get("products_number", 0),
+                    "credit_card": pred["customer_data"].get("credit_card", False),
+                    "active_member": pred["customer_data"].get("active_member", False),
+                    "estimated_salary": pred["customer_data"].get(
+                        "estimated_salary", 0
+                    ),
+                }
+            )
+
         return pd.DataFrame(history_data)
 
-    def predict_churn(self, customer_data, model_name='Random Forest', scenario_note=""):
+    def predict_churn(
+        self, customer_data, model_name="Random Forest", scenario_note=""
+    ):
         """Predict churn for a single customer with scenario tracking"""
         if model_name not in self.models:
             raise ValueError(f"Model {model_name} not found")
-        
+
         # Preprocess customer data
         df_customer = pd.DataFrame([customer_data])
-        
+
         # Encode categorical variables
-        for col in ['gender']:
+        for col in ["gender"]:
             if col in customer_data and col in self.label_encoders:
                 try:
-                    df_customer[col] = self.label_encoders[col].transform([customer_data[col]])[0]
+                    df_customer[col] = self.label_encoders[col].transform(
+                        [customer_data[col]]
+                    )[0]
                 except ValueError:
-                    st.error(f"Unknown gender value: {customer_data[col]}. Please use 'Male' or 'Female'.")
+                    st.error(
+                        f"Unknown gender value: {customer_data[col]}. Please use 'Male' or 'Female'."
+                    )
                     return 0.5, False, {}
-        
+
         # Select features in correct order
         feature_columns = [
-            'credit_score', 'gender', 'age', 'tenure', 
-            'balance', 'products_number', 'credit_card', 
-            'active_member', 'estimated_salary'
+            "credit_score",
+            "gender",
+            "age",
+            "tenure",
+            "balance",
+            "products_number",
+            "credit_card",
+            "active_member",
+            "estimated_salary",
         ]
-        
-        available_features = [col for col in feature_columns if col in df_customer.columns]
+
+        available_features = [
+            col for col in feature_columns if col in df_customer.columns
+        ]
         X = df_customer[available_features]
-        
+
         # Make prediction
-        if model_name == 'Logistic Regression':
+        if model_name == "Logistic Regression":
             X_scaled = self.scaler.transform(X)
             probability = self.models[model_name].predict_proba(X_scaled)[0, 1]
         else:
             probability = self.models[model_name].predict_proba(X)[0, 1]
-        
+
         prediction = probability > 0.5
-        
+
         # Get recommendations
-        recommendations = self.recommendation_engine.get_recommendations(probability, customer_data)
-        
+        recommendations = self.recommendation_engine.get_recommendations(
+            probability, customer_data
+        )
+
         # Save prediction (to database if connected, otherwise locally)
         is_scenario = bool(scenario_note)
-        self.save_prediction(customer_data, probability, prediction, model_name, scenario_note, is_scenario)
-        
+        self.save_prediction(
+            customer_data,
+            probability,
+            prediction,
+            model_name,
+            scenario_note,
+            is_scenario,
+        )
+
         # Add to prediction history
         prediction_record = {
-            'timestamp': datetime.now(),
-            'customer_id': customer_data.get('customer_id', 'Unknown'),
-            'probability': probability,
-            'prediction': prediction,
-            'model': model_name,
-            'scenario_note': scenario_note,
-            'recommendations': recommendations
+            "timestamp": datetime.now(),
+            "customer_id": customer_data.get("customer_id", "Unknown"),
+            "probability": probability,
+            "prediction": prediction,
+            "model": model_name,
+            "scenario_note": scenario_note,
+            "recommendations": recommendations,
         }
         self.prediction_history.append(prediction_record)
-        
+
         return probability, prediction, recommendations
+
 
 # =============================================================================
 # ENHANCED STREAMLIT DASHBOARD (SQLITE VERSION)
 # =============================================================================
+
 
 def setup_streamlit_app():
     """Configure Streamlit page settings"""
@@ -711,11 +824,12 @@ def setup_streamlit_app():
         page_title="🏦 Advanced Customer Churn Prediction System",
         page_icon="🏦",
         layout="wide",
-        initial_sidebar_state="expanded"
+        initial_sidebar_state="expanded",
     )
-    
+
     # Custom CSS for professional look
-    st.markdown("""
+    st.markdown(
+        """
     <style>
     .main-header {
         font-size: 2.5rem;
@@ -734,40 +848,45 @@ def setup_streamlit_app():
     .risk-medium { background-color: #ffa726; color: white; padding: 10px; border-radius: 5px; }
     .risk-low { background-color: #66bb6a; color: white; padding: 10px; border-radius: 5px; }
     </style>
-    """, unsafe_allow_html=True)
+    """,
+        unsafe_allow_html=True,
+    )
+
 
 @st.cache_resource
 def initialize_predictor():
     """Initialize the churn predictor"""
     return EnhancedChurnPredictor()
 
+
 def show_data_management(predictor):
     """Enhanced data upload and database connection"""
     st.header("📊 Data Management")
-    
+
     tab1, tab2 = st.tabs(["📁 Upload CSV Data", "🗄️ SQLite Database"])
-    
+
     with tab1:
         show_csv_upload(predictor)
-    
+
     with tab2:
         show_sqlite_connection(predictor)
+
 
 def show_csv_upload(predictor):
     """Display CSV upload functionality"""
     st.subheader("Upload Customer Data CSV")
-    
+
     uploaded_file = st.file_uploader(
         "Choose a CSV file with customer data",
-        type=['csv'],
-        help="File should contain customer data with churn labels"
+        type=["csv"],
+        help="File should contain customer data with churn labels",
     )
-    
+
     if uploaded_file is not None:
         try:
             df = pd.read_csv(uploaded_file)
             st.success(f"✅ Successfully uploaded {len(df)} records")
-            
+
             # Display file info
             col1, col2, col3, col4 = st.columns(4)
             with col1:
@@ -775,78 +894,95 @@ def show_csv_upload(predictor):
             with col2:
                 st.metric("Columns", len(df.columns))
             with col3:
-                if 'churn' in df.columns:
-                    churn_rate = df['churn'].mean() * 100
+                if "churn" in df.columns:
+                    churn_rate = df["churn"].mean() * 100
                     st.metric("Churn Rate", f"{churn_rate:.2f}%")
             with col4:
-                st.metric("Data Quality", "Good" if not df.isnull().any().any() else "Check Required")
-            
+                st.metric(
+                    "Data Quality",
+                    "Good" if not df.isnull().any().any() else "Check Required",
+                )
+
             # Data preview
             with st.expander("📋 Data Preview", expanded=True):
                 st.dataframe(df.head(10))
-            
+
             # Column information
             with st.expander("🔍 Column Information"):
-                col_info = pd.DataFrame({
-                    'Column': df.columns,
-                    'Data Type': df.dtypes,
-                    'Non-Null Count': df.count(),
-                    'Null Count': df.isnull().sum()
-                })
+                col_info = pd.DataFrame(
+                    {
+                        "Column": df.columns,
+                        "Data Type": df.dtypes,
+                        "Non-Null Count": df.count(),
+                        "Null Count": df.isnull().sum(),
+                    }
+                )
                 st.dataframe(col_info)
-            
+
             predictor.set_uploaded_data(df)
-            
+
             # Train models
-            if st.button("🎯 Train Machine Learning Models", type="primary", use_container_width=True):
+            if st.button(
+                "🎯 Train Machine Learning Models",
+                type="primary",
+                use_container_width=True,
+            ):
                 with st.spinner("Training models with uploaded data..."):
                     results = predictor.train_models()
                 if results:
                     st.session_state.training_results = results
                     st.success("✅ Models trained successfully!")
-                    
+
         except Exception as e:
             st.error(f"❌ Error reading file: {e}")
+
 
 def show_sqlite_connection(predictor):
     """Display SQLite database connection interface"""
     st.subheader("🗄️ SQLite Database Connection")
-    
+
     col1, col2 = st.columns([2, 1])
-    
+
     with col1:
         with st.form("db_connection_form"):
             st.write("SQLite Database Configuration:")
-            
+
             db_path = st.text_input("Database Path", value="churn_prediction.db")
             _ = st.checkbox("Create new database if it doesn't exist", value=True)
-            
-            if st.form_submit_button("🔗 Connect to SQLite Database", use_container_width=True):
+
+            if st.form_submit_button(
+                "🔗 Connect to SQLite Database", use_container_width=True
+            ):
                 success, message = predictor.connect_db(db_path)
                 if success:
                     st.success(message)
                     # Transfer local predictions to database if any exist
-                    if hasattr(predictor, 'local_predictions') and predictor.local_predictions:
-                        st.info(f"Transferring {len(predictor.local_predictions)} local predictions to database...")
+                    if (
+                        hasattr(predictor, "local_predictions")
+                        and predictor.local_predictions
+                    ):
+                        st.info(
+                            f"Transferring {len(predictor.local_predictions)} local predictions to database..."
+                        )
                         for pred in predictor.local_predictions:
                             predictor.save_prediction(
-                                pred['customer_data'],
-                                pred['probability'],
-                                pred['prediction'],
-                                pred['model'],
-                                pred.get('scenario_note', ''),
-                                pred.get('is_scenario', False)
+                                pred["customer_data"],
+                                pred["probability"],
+                                pred["prediction"],
+                                pred["model"],
+                                pred.get("scenario_note", ""),
+                                pred.get("is_scenario", False),
                             )
                     st.rerun()
                 else:
                     st.error(message)
-        
+
         if predictor.is_db_connected:
             if st.button("🔌 Disconnect Database", use_container_width=True):
                 predictor.disconnect_db()
                 st.success("Disconnected from database")
                 st.rerun()
-    
+
     with col2:
         st.subheader("Connection Status")
         if predictor.is_db_connected:
@@ -855,10 +991,10 @@ def show_sqlite_connection(predictor):
                 # Test data access
                 df = predictor.load_data()
                 history_df = predictor.get_prediction_history(5)
-                
+
                 st.metric("Customer Records", len(df))
                 st.metric("Stored Predictions", len(history_df))
-                
+
             except Exception as e:
                 st.warning(f"Connected but error accessing data: {e}")
         else:
@@ -869,7 +1005,7 @@ def show_sqlite_connection(predictor):
             - History available this session
             - Data resets on app restart
             """)
-            
+
         # SQLite info
         with st.expander("📋 SQLite Information"):
             st.markdown("""
@@ -885,257 +1021,373 @@ def show_sqlite_connection(predictor):
             - Compatible with most SQL tools
             """)
 
+
 def show_dashboard(predictor):
     """Enhanced dashboard with interactive visualizations"""
     st.header("📈 Analytics Dashboard")
-    
+
     df = predictor.load_data()
-    
+
     # Data source info
     if predictor.uploaded_data is not None and not predictor.uploaded_data.empty:
-        source_info = "📁 Uploaded CSV" 
+        source_info = "📁 Uploaded CSV"
     elif predictor.is_db_connected:
         source_info = "🗄️ SQLite Database"
     else:
         source_info = "🎲 Sample Data"
     st.info(f"**Data Source:** {source_info} | **Total Records:** {len(df):,}")
-    
+
     # Key metrics
     col1, col2, col3, col4 = st.columns(4)
     with col1:
         st.metric("Total Customers", f"{len(df):,}")
     with col2:
-        churn_rate = df['churn'].mean() * 100
+        churn_rate = df["churn"].mean() * 100
         st.metric("Overall Churn Rate", f"{churn_rate:.2f}%")
     with col3:
-        avg_balance = df['balance'].mean()
+        avg_balance = df["balance"].mean()
         st.metric("Average Balance", f"KES {avg_balance:,.0f}")
     with col4:
-        active_rate = df['active_member'].mean() * 100
+        active_rate = df["active_member"].mean() * 100
         st.metric("Active Members", f"{active_rate:.1f}%")
-    
+
     # Interactive filters
     st.subheader("🔍 Interactive Filters")
     col1, col2, col3, col4 = st.columns(4)
     with col1:
-        gender_filter = st.multiselect("Gender", options=df['gender'].unique(), default=df['gender'].unique())
+        gender_filter = st.multiselect(
+            "Gender", options=df["gender"].unique(), default=df["gender"].unique()
+        )
     with col2:
-        age_range = st.slider("Age Range", int(df['age'].min()), int(df['age'].max()), (25, 65))
+        age_range = st.slider(
+            "Age Range", int(df["age"].min()), int(df["age"].max()), (25, 65)
+        )
     with col3:
-        balance_range = st.slider("Balance Range", float(df['balance'].min()), float(df['balance'].max()), 
-                                (0.0, 150000.0))
+        balance_range = st.slider(
+            "Balance Range",
+            float(df["balance"].min()),
+            float(df["balance"].max()),
+            (0.0, 150000.0),
+        )
     with col4:
-        tenure_range = st.slider("Tenure Range", int(df['tenure'].min()), int(df['tenure'].max()), (0, 8))
-    
+        tenure_range = st.slider(
+            "Tenure Range", int(df["tenure"].min()), int(df["tenure"].max()), (0, 8)
+        )
+
     # Apply filters
     filtered_df = df[
-        (df['gender'].isin(gender_filter)) &
-        (df['age'].between(age_range[0], age_range[1])) &
-        (df['balance'].between(balance_range[0], balance_range[1])) &
-        (df['tenure'].between(tenure_range[0], tenure_range[1]))
+        (df["gender"].isin(gender_filter))
+        & (df["age"].between(age_range[0], age_range[1]))
+        & (df["balance"].between(balance_range[0], balance_range[1]))
+        & (df["tenure"].between(tenure_range[0], tenure_range[1]))
     ]
-    
+
     # Visualization tabs
-    tab1, tab2, tab3, tab4 = st.tabs(["📊 Distribution Analysis", "🔥 Correlation Insights", "📈 Cohort Analysis", "🤖 Model Performance"])
-    
+    tab1, tab2, tab3, tab4 = st.tabs(
+        [
+            "📊 Distribution Analysis",
+            "🔥 Correlation Insights",
+            "📈 Cohort Analysis",
+            "🤖 Model Performance",
+        ]
+    )
+
     with tab1:
         show_distribution_analysis(filtered_df)
-    
+
     with tab2:
         show_correlation_analysis(filtered_df)
-    
+
     with tab3:
         show_cohort_analysis(filtered_df)
-    
+
     with tab4:
-        if 'training_results' in st.session_state:
+        if "training_results" in st.session_state:
             show_model_performance_dashboard(st.session_state.training_results)
         else:
             st.info("🎯 Train models first to see performance metrics")
 
+
 def show_distribution_analysis(df):
     """Show distribution analysis visualizations"""
     col1, col2 = st.columns(2)
-    
+
     with col1:
         # Churn by demographic factors
-        fig1 = px.histogram(df, x='age', color='churn', barmode='overlay',
-                          title='Age Distribution by Churn Status',
-                          opacity=0.7)
+        fig1 = px.histogram(
+            df,
+            x="age",
+            color="churn",
+            barmode="overlay",
+            title="Age Distribution by Churn Status",
+            opacity=0.7,
+        )
         st.plotly_chart(fig1, use_container_width=True)
-        
+
         # Balance distribution
-        fig3 = px.box(df, x='churn', y='balance', color='churn',
-                     title='Balance Distribution by Churn Status')
+        fig3 = px.box(
+            df,
+            x="churn",
+            y="balance",
+            color="churn",
+            title="Balance Distribution by Churn Status",
+        )
         st.plotly_chart(fig3, use_container_width=True)
-    
+
     with col2:
         # Churn by activity status
-        activity_churn = df.groupby('active_member')['churn'].mean().reset_index()
-        activity_churn['active_member'] = activity_churn['active_member'].map({True: 'Active', False: 'Inactive'})
-        fig2 = px.pie(activity_churn, values='churn', names='active_member',
-                     title='Churn Distribution by Activity Status')
+        activity_churn = df.groupby("active_member")["churn"].mean().reset_index()
+        activity_churn["active_member"] = activity_churn["active_member"].map(
+            {True: "Active", False: "Inactive"}
+        )
+        fig2 = px.pie(
+            activity_churn,
+            values="churn",
+            names="active_member",
+            title="Churn Distribution by Activity Status",
+        )
         st.plotly_chart(fig2, use_container_width=True)
-        
+
         # Products vs Churn
-        products_churn = df.groupby('products_number')['churn'].mean().reset_index()
-        fig4 = px.bar(products_churn, x='products_number', y='churn',
-                     title='Churn Rate by Number of Products',
-                     color='churn')
+        products_churn = df.groupby("products_number")["churn"].mean().reset_index()
+        fig4 = px.bar(
+            products_churn,
+            x="products_number",
+            y="churn",
+            title="Churn Rate by Number of Products",
+            color="churn",
+        )
         st.plotly_chart(fig4, use_container_width=True)
+
 
 def show_correlation_analysis(df):
     """Show correlation analysis visualizations"""
     col1, col2 = st.columns(2)
-    
+
     with col1:
         # Correlation heatmap
-        numeric_cols = ['credit_score', 'age', 'tenure', 'balance', 'products_number', 'estimated_salary', 'churn']
+        numeric_cols = [
+            "credit_score",
+            "age",
+            "tenure",
+            "balance",
+            "products_number",
+            "estimated_salary",
+            "churn",
+        ]
         corr_matrix = df[numeric_cols].corr()
-        
-        fig = px.imshow(corr_matrix, 
-                       title="Feature Correlation Matrix",
-                       color_continuous_scale='RdBu_r',
-                       aspect="auto")
+
+        fig = px.imshow(
+            corr_matrix,
+            title="Feature Correlation Matrix",
+            color_continuous_scale="RdBu_r",
+            aspect="auto",
+        )
         st.plotly_chart(fig, use_container_width=True)
-    
+
     with col2:
         # Scatter plot: Credit Score vs Balance
-        fig = px.scatter(df, x='credit_score', y='balance', color='churn',
-                        size='age', hover_data=['tenure'],
-                        title='Credit Score vs Balance by Churn Status',
-                        opacity=0.6)
+        fig = px.scatter(
+            df,
+            x="credit_score",
+            y="balance",
+            color="churn",
+            size="age",
+            hover_data=["tenure"],
+            title="Credit Score vs Balance by Churn Status",
+            opacity=0.6,
+        )
         st.plotly_chart(fig, use_container_width=True)
-        
+
         # Feature importance (if available)
-        if 'training_results' in st.session_state and 'Random Forest' in st.session_state.training_results:
-            feature_importance = st.session_state.training_results['Random Forest']['feature_importance']
-            fig = px.bar(feature_importance, x='importance', y='feature',
-                        title='Random Forest Feature Importance',
-                        orientation='h')
+        if (
+            "training_results" in st.session_state
+            and "Random Forest" in st.session_state.training_results
+        ):
+            feature_importance = st.session_state.training_results["Random Forest"][
+                "feature_importance"
+            ]
+            fig = px.bar(
+                feature_importance,
+                x="importance",
+                y="feature",
+                title="Random Forest Feature Importance",
+                orientation="h",
+            )
             st.plotly_chart(fig, use_container_width=True)
+
 
 def show_cohort_analysis(df):
     """Show cohort analysis visualizations"""
     # Create tenure cohorts
-    df['cohort_group'] = (df['tenure'] // 12) + 1
-    cohort_data = df.groupby('cohort_group').agg({
-        'customer_id': 'count',
-        'churn': 'mean',
-        'balance': 'mean',
-        'credit_score': 'mean'
-    }).reset_index()
-    
+    df["cohort_group"] = (df["tenure"] // 12) + 1
+    cohort_data = (
+        df.groupby("cohort_group")
+        .agg(
+            {
+                "customer_id": "count",
+                "churn": "mean",
+                "balance": "mean",
+                "credit_score": "mean",
+            }
+        )
+        .reset_index()
+    )
+
     col1, col2 = st.columns(2)
-    
+
     with col1:
         # Cohort churn rates
-        fig1 = px.line(cohort_data, x='cohort_group', y='churn',
-                      title='Churn Rate by Tenure Cohort',
-                      markers=True)
-        fig1.update_layout(xaxis_title='Tenure Cohort (Years)', yaxis_title='Churn Rate')
+        fig1 = px.line(
+            cohort_data,
+            x="cohort_group",
+            y="churn",
+            title="Churn Rate by Tenure Cohort",
+            markers=True,
+        )
+        fig1.update_layout(
+            xaxis_title="Tenure Cohort (Years)", yaxis_title="Churn Rate"
+        )
         st.plotly_chart(fig1, use_container_width=True)
-    
+
     with col2:
         # Cohort size and value
-        fig2 = px.bar(cohort_data, x='cohort_group', y='customer_id',
-                     title='Customer Distribution by Tenure Cohort',
-                     color='balance')
+        fig2 = px.bar(
+            cohort_data,
+            x="cohort_group",
+            y="customer_id",
+            title="Customer Distribution by Tenure Cohort",
+            color="balance",
+        )
         st.plotly_chart(fig2, use_container_width=True)
+
 
 def show_model_performance_dashboard(results):
     """Enhanced model performance dashboard"""
     st.subheader("🤖 Model Performance Comparison")
-    
+
     # Metrics comparison
-    metrics_df = pd.DataFrame({
-        'Model': list(results.keys()),
-        'Accuracy': [results[model]['accuracy'] for model in results],
-        'Precision': [results[model]['precision'] for model in results],
-        'Recall': [results[model]['recall'] for model in results],
-        'F1-Score': [results[model]['f1'] for model in results],
-        'ROC-AUC': [results[model]['roc_auc'] for model in results]
-    })
-    
+    metrics_df = pd.DataFrame(
+        {
+            "Model": list(results.keys()),
+            "Accuracy": [results[model]["accuracy"] for model in results],
+            "Precision": [results[model]["precision"] for model in results],
+            "Recall": [results[model]["recall"] for model in results],
+            "F1-Score": [results[model]["f1"] for model in results],
+            "ROC-AUC": [results[model]["roc_auc"] for model in results],
+        }
+    )
+
     col1, col2 = st.columns(2)
-    
+
     with col1:
-        st.dataframe(metrics_df.style.format({
-            'Accuracy': '{:.2%}', 'Precision': '{:.2%}', 'Recall': '{:.2%}',
-            'F1-Score': '{:.2%}', 'ROC-AUC': '{:.2%}'
-        }))
-    
+        st.dataframe(
+            metrics_df.style.format(
+                {
+                    "Accuracy": "{:.2%}",
+                    "Precision": "{:.2%}",
+                    "Recall": "{:.2%}",
+                    "F1-Score": "{:.2%}",
+                    "ROC-AUC": "{:.2%}",
+                }
+            )
+        )
+
     with col2:
         # Radar chart
         models = list(results.keys())
-        metrics = ['Accuracy', 'Precision', 'Recall', 'F1-Score', 'ROC-AUC']
-        
+        metrics = ["Accuracy", "Precision", "Recall", "F1-Score", "ROC-AUC"]
+
         fig = go.Figure()
         for model in models:
             values = [
-                results[model]['accuracy'],
-                results[model]['precision'],
-                results[model]['recall'],
-                results[model]['f1'],
-                results[model]['roc_auc']
+                results[model]["accuracy"],
+                results[model]["precision"],
+                results[model]["recall"],
+                results[model]["f1"],
+                results[model]["roc_auc"],
             ]
             values.append(values[0])  # Close the radar
-            
-            fig.add_trace(go.Scatterpolar(
-                r=values,
-                theta=metrics + [metrics[0]],
-                fill='toself',
-                name=model
-            ))
-        
-        fig.update_layout(polar=dict(radialaxis=dict(visible=True, range=[0, 1])),
-                         showlegend=True, title="Model Performance Radar")
+
+            fig.add_trace(
+                go.Scatterpolar(
+                    r=values, theta=metrics + [metrics[0]], fill="toself", name=model
+                )
+            )
+
+        fig.update_layout(
+            polar=dict(radialaxis=dict(visible=True, range=[0, 1])),
+            showlegend=True,
+            title="Model Performance Radar",
+        )
         st.plotly_chart(fig, use_container_width=True)
-    
+
     # ROC Curves and Confusion Matrices
     st.subheader("📊 Detailed Model Analysis")
     for model_name in results:
         with st.expander(f"{model_name} Detailed Analysis", expanded=False):
             col1, col2 = st.columns(2)
-            
+
             with col1:
                 # ROC Curve
                 from sklearn.metrics import roc_curve
-                fpr, tpr, _ = roc_curve(results[model_name]['y_test'], 
-                                      results[model_name]['y_pred_proba'])
-                
-                fig_roc = px.area(x=fpr, y=tpr, title=f'{model_name} ROC Curve',
-                                labels=dict(x='False Positive Rate', y='True Positive Rate'))
-                fig_roc.add_shape(type='line', line=dict(dash='dash'), x0=0, x1=1, y0=0, y1=1)
+
+                fpr, tpr, _ = roc_curve(
+                    results[model_name]["y_test"], results[model_name]["y_pred_proba"]
+                )
+
+                fig_roc = px.area(
+                    x=fpr,
+                    y=tpr,
+                    title=f"{model_name} ROC Curve",
+                    labels=dict(x="False Positive Rate", y="True Positive Rate"),
+                )
+                fig_roc.add_shape(
+                    type="line", line=dict(dash="dash"), x0=0, x1=1, y0=0, y1=1
+                )
                 st.plotly_chart(fig_roc, use_container_width=True)
-            
+
             with col2:
                 # Confusion Matrix
-                cm = confusion_matrix(results[model_name]['y_test'], results[model_name]['y_pred'])
-                fig_cm = px.imshow(cm, text_auto=True, aspect="auto",
-                                 title=f'{model_name} Confusion Matrix',
-                                 labels=dict(x="Predicted", y="Actual", color="Count"))
+                cm = confusion_matrix(
+                    results[model_name]["y_test"], results[model_name]["y_pred"]
+                )
+                fig_cm = px.imshow(
+                    cm,
+                    text_auto=True,
+                    aspect="auto",
+                    title=f"{model_name} Confusion Matrix",
+                    labels=dict(x="Predicted", y="Actual", color="Count"),
+                )
                 st.plotly_chart(fig_cm, use_container_width=True)
+
 
 def show_prediction_interface(predictor):
     """Enhanced prediction interface with scenario analysis"""
     st.header("🔮 Churn Prediction & Scenario Analysis")
-    
-    tab1, tab2, tab3 = st.tabs(["🎯 Single Customer Prediction", "🔄 Scenario Analysis", "📋 Prediction History"])
-    
+
+    tab1, tab2, tab3 = st.tabs(
+        [
+            "🎯 Single Customer Prediction",
+            "🔄 Scenario Analysis",
+            "📋 Prediction History",
+        ]
+    )
+
     with tab1:
         show_single_prediction(predictor)
-    
+
     with tab2:
         show_scenario_analysis(predictor)
-    
+
     with tab3:
         show_prediction_history(predictor)
+
 
 def show_single_prediction(predictor):
     """Single customer prediction interface"""
     col1, col2 = st.columns(2)
-    
+
     with col1:
         st.subheader("Customer Profile")
         with st.form("prediction_form"):
@@ -1144,108 +1396,123 @@ def show_single_prediction(predictor):
             gender = st.selectbox("Gender", ["Male", "Female"])
             age = st.slider("Age", 18, 80, 45)
             tenure = st.slider("Tenure (years)", 0, 10, 3)
-            balance = st.number_input("Balance (KES)", min_value=0.0, value=50000.0, step=1000.0)
+            balance = st.number_input(
+                "Balance (KES)", min_value=0.0, value=50000.0, step=1000.0
+            )
             products_number = st.slider("Number of Products", 1, 4, 2)
             credit_card = st.checkbox("Has Credit Card", value=True)
             active_member = st.checkbox("Active Member", value=True)
-            estimated_salary = st.number_input("Estimated Salary (KES)", min_value=0.0, value=75000.0, step=1000.0)
-            
-            model_choice = st.selectbox("Prediction Model", ["Random Forest", "Logistic Regression"])
-            
+            estimated_salary = st.number_input(
+                "Estimated Salary (KES)", min_value=0.0, value=75000.0, step=1000.0
+            )
+
+            model_choice = st.selectbox(
+                "Prediction Model", ["Random Forest", "Logistic Regression"]
+            )
+
             if st.form_submit_button("🎯 Predict Churn Risk", use_container_width=True):
                 if not predictor.models:
-                    st.error("❌ Please train models first using the Data Management page!")
+                    st.error(
+                        "❌ Please train models first using the Data Management page!"
+                    )
                     return
-                
+
                 customer_data = {
-                    'customer_id': customer_id,
-                    'credit_score': credit_score,
-                    'gender': gender,
-                    'age': age,
-                    'tenure': tenure,
-                    'balance': balance,
-                    'products_number': products_number,
-                    'credit_card': credit_card,
-                    'active_member': active_member,
-                    'estimated_salary': estimated_salary
+                    "customer_id": customer_id,
+                    "credit_score": credit_score,
+                    "gender": gender,
+                    "age": age,
+                    "tenure": tenure,
+                    "balance": balance,
+                    "products_number": products_number,
+                    "credit_card": credit_card,
+                    "active_member": active_member,
+                    "estimated_salary": estimated_salary,
                 }
-                
+
                 try:
-                    with st.spinner('Analyzing customer profile...'):
-                        probability, prediction, recommendations = predictor.predict_churn(
-                            customer_data, model_choice)
-                    
+                    with st.spinner("Analyzing customer profile..."):
+                        probability, prediction, recommendations = (
+                            predictor.predict_churn(customer_data, model_choice)
+                        )
+
                     st.session_state.last_prediction = {
-                        'probability': probability,
-                        'prediction': prediction,
-                        'recommendations': recommendations,
-                        'customer_data': customer_data
+                        "probability": probability,
+                        "prediction": prediction,
+                        "recommendations": recommendations,
+                        "customer_data": customer_data,
                     }
                     st.rerun()
-                    
+
                 except Exception as e:
                     st.error(f"Prediction error: {e}")
-    
+
     with col2:
         st.subheader("Prediction Results")
-        
-        if 'last_prediction' in st.session_state:
+
+        if "last_prediction" in st.session_state:
             pred = st.session_state.last_prediction
-            prob = pred['probability']
-            rec = pred['recommendations']
-            
+            prob = pred["probability"]
+            rec = pred["recommendations"]
+
             # Risk level display
             risk_class = {
-                'critical_risk': 'risk-critical',
-                'high_risk': 'risk-high', 
-                'medium_risk': 'risk-medium',
-                'low_risk': 'risk-low'
-            }[rec['risk_level']]
-            
-            st.markdown(f"<div class='{risk_class}'><h3>{rec['title']}</h3></div>", unsafe_allow_html=True)
-            
+                "critical_risk": "risk-critical",
+                "high_risk": "risk-high",
+                "medium_risk": "risk-medium",
+                "low_risk": "risk-low",
+            }[rec["risk_level"]]
+
+            st.markdown(
+                f"<div class='{risk_class}'><h3>{rec['title']}</h3></div>",
+                unsafe_allow_html=True,
+            )
+
             # Probability gauge
-            fig = go.Figure(go.Indicator(
-                mode="gauge+number+delta",
-                value=prob * 100,
-                domain={'x': [0, 1], 'y': [0, 1]},
-                title={'text': "Churn Probability"},
-                gauge={
-                    'axis': {'range': [None, 100]},
-                    'bar': {'color': "darkblue"},
-                    'steps': [
-                        {'range': [0, 30], 'color': "lightgreen"},
-                        {'range': [30, 60], 'color': "yellow"},
-                        {'range': [60, 80], 'color': "orange"},
-                        {'range': [80, 100], 'color': "red"}
-                    ],
-                    'threshold': {
-                        'line': {'color': "red", 'width': 4},
-                        'thickness': 0.75,
-                        'value': 90
-                    }
-                }
-            ))
+            fig = go.Figure(
+                go.Indicator(
+                    mode="gauge+number+delta",
+                    value=prob * 100,
+                    domain={"x": [0, 1], "y": [0, 1]},
+                    title={"text": "Churn Probability"},
+                    gauge={
+                        "axis": {"range": [None, 100]},
+                        "bar": {"color": "darkblue"},
+                        "steps": [
+                            {"range": [0, 30], "color": "lightgreen"},
+                            {"range": [30, 60], "color": "yellow"},
+                            {"range": [60, 80], "color": "orange"},
+                            {"range": [80, 100], "color": "red"},
+                        ],
+                        "threshold": {
+                            "line": {"color": "red", "width": 4},
+                            "thickness": 0.75,
+                            "value": 90,
+                        },
+                    },
+                )
+            )
             fig.update_layout(height=300)
             st.plotly_chart(fig, use_container_width=True)
-            
+
             # Recommendations
             with st.expander("🎯 Recommended Actions", expanded=True):
-                for action in rec['general_actions']:
+                for action in rec["general_actions"]:
                     st.write(action)
-            
+
             with st.expander("💰 Retention Incentives", expanded=True):
-                for incentive in rec['incentives']:
+                for incentive in rec["incentives"]:
                     st.write(incentive)
-            
+
             with st.expander("🎨 Personalized Strategy", expanded=True):
-                for personal_rec in rec['personalized_recommendations']:
+                for personal_rec in rec["personalized_recommendations"]:
                     st.write(personal_rec)
-            
+
             # Export options
             export_data = predictor.recommendation_engine.generate_export_data(
-                pred['customer_data'], rec)
-            
+                pred["customer_data"], rec
+            )
+
             col1, col2 = st.columns(2)
             with col1:
                 # CSV Export
@@ -1254,234 +1521,309 @@ def show_single_prediction(predictor):
                     "📥 Download as CSV",
                     csv_data,
                     f"churn_recommendations_{customer_id}.csv",
-                    "text/csv"
+                    "text/csv",
                 )
             with col2:
                 # Excel Export
                 excel_buffer = io.BytesIO()
-                with pd.ExcelWriter(excel_buffer, engine='xlsxwriter') as writer:
-                    pd.DataFrame([export_data]).to_excel(writer, sheet_name='Recommendations', index=False)
+                with pd.ExcelWriter(excel_buffer, engine="xlsxwriter") as writer:
+                    pd.DataFrame([export_data]).to_excel(
+                        writer, sheet_name="Recommendations", index=False
+                    )
                     # Add detailed actions sheet
-                    actions_df = pd.DataFrame({
-                        'Action Type': ['General Actions'] * len(rec['general_actions']) + 
-                                      ['Incentives'] * len(rec['incentives']) + 
-                                      ['Personalized'] * len(rec['personalized_recommendations']),
-                        'Description': rec['general_actions'] + rec['incentives'] + rec['personalized_recommendations']
-                    })
-                    actions_df.to_excel(writer, sheet_name='Detailed Actions', index=False)
-                
+                    actions_df = pd.DataFrame(
+                        {
+                            "Action Type": ["General Actions"]
+                            * len(rec["general_actions"])
+                            + ["Incentives"] * len(rec["incentives"])
+                            + ["Personalized"]
+                            * len(rec["personalized_recommendations"]),
+                            "Description": rec["general_actions"]
+                            + rec["incentives"]
+                            + rec["personalized_recommendations"],
+                        }
+                    )
+                    actions_df.to_excel(
+                        writer, sheet_name="Detailed Actions", index=False
+                    )
+
                 st.download_button(
                     "📊 Download as Excel",
                     excel_buffer.getvalue(),
                     f"churn_analysis_{customer_id}.xlsx",
-                    "application/vnd.ms-excel"
+                    "application/vnd.ms-excel",
                 )
         else:
-            st.info("👆 Enter customer details and click 'Predict Churn Risk' to see analysis")
+            st.info(
+                "👆 Enter customer details and click 'Predict Churn Risk' to see analysis"
+            )
+
 
 def show_scenario_analysis(predictor):
     """Scenario analysis interface"""
     st.subheader("🔄 What-If Scenario Analysis")
-    
-    if 'last_prediction' not in st.session_state:
-        st.info("👆 First make a prediction in the Single Customer tab to enable scenario analysis")
+
+    if "last_prediction" not in st.session_state:
+        st.info(
+            "👆 First make a prediction in the Single Customer tab to enable scenario analysis"
+        )
         return
-    
+
     base_pred = st.session_state.last_prediction
-    base_customer = base_pred['customer_data']
-    
+    base_customer = base_pred["customer_data"]
+
     col1, col2 = st.columns(2)
-    
+
     with col1:
         st.write("**Adjust customer attributes to see impact on churn risk:**")
-        
+
         # Scenario controls
-        new_balance = st.slider("New Balance", 0.0, 200000.0, float(base_customer['balance']), 1000.0,
-                               help="How would changing the balance affect churn risk?")
-        new_products = st.slider("Additional Products", 0, 3, 0,
-                                help="What if the customer adopts more products?")
-        new_activity = st.selectbox("Activity Status", ["Active", "Inactive"], 
-                                   index=0 if base_customer['active_member'] else 1)
-        new_credit_card = st.checkbox("Has Credit Card", value=base_customer['credit_card'])
-        
-        scenario_note = st.text_input("Scenario Description", 
-                                     "Testing impact of balance increase and product adoption")
-    
+        new_balance = st.slider(
+            "New Balance",
+            0.0,
+            200000.0,
+            float(base_customer["balance"]),
+            1000.0,
+            help="How would changing the balance affect churn risk?",
+        )
+        new_products = st.slider(
+            "Additional Products",
+            0,
+            3,
+            0,
+            help="What if the customer adopts more products?",
+        )
+        new_activity = st.selectbox(
+            "Activity Status",
+            ["Active", "Inactive"],
+            index=0 if base_customer["active_member"] else 1,
+        )
+        new_credit_card = st.checkbox(
+            "Has Credit Card", value=base_customer["credit_card"]
+        )
+
+        scenario_note = st.text_input(
+            "Scenario Description",
+            "Testing impact of balance increase and product adoption",
+        )
+
     with col2:
         if st.button("🔄 Run Scenario Analysis", use_container_width=True):
             # Create modified customer profile
             modified_customer = base_customer.copy()
-            modified_customer['balance'] = new_balance
-            modified_customer['products_number'] += new_products
-            modified_customer['active_member'] = (new_activity == "Active")
-            modified_customer['credit_card'] = new_credit_card
-            
+            modified_customer["balance"] = new_balance
+            modified_customer["products_number"] += new_products
+            modified_customer["active_member"] = new_activity == "Active"
+            modified_customer["credit_card"] = new_credit_card
+
             # Get new prediction
-            with st.spinner('Analyzing scenario...'):
+            with st.spinner("Analyzing scenario..."):
                 new_prob, new_pred, new_rec = predictor.predict_churn(
-                    modified_customer, 
-                    'Random Forest',
-                    scenario_note
+                    modified_customer, "Random Forest", scenario_note
                 )
-            
+
             # Display comparison
             st.subheader("Scenario Results")
-            
+
             col1, col2 = st.columns(2)
             with col1:
                 st.metric("Original Probability", f"{base_pred['probability']:.2%}")
             with col2:
-                st.metric("New Probability", f"{new_prob:.2%}", 
-                         f"{(new_prob - base_pred['probability']):+.2%}")
-            
+                st.metric(
+                    "New Probability",
+                    f"{new_prob:.2%}",
+                    f"{(new_prob - base_pred['probability']):+.2%}",
+                )
+
             # Impact analysis
-            risk_change = "🟢 Improved" if new_prob < base_pred['probability'] else \
-                         "🔴 Worsened" if new_prob > base_pred['probability'] else "🟡 Unchanged"
-            
+            risk_change = (
+                "🟢 Improved"
+                if new_prob < base_pred["probability"]
+                else "🔴 Worsened"
+                if new_prob > base_pred["probability"]
+                else "🟡 Unchanged"
+            )
+
             st.write(f"**Risk Level:** {risk_change}")
-            
-            if new_prob < base_pred['probability']:
+
+            if new_prob < base_pred["probability"]:
                 st.success("✅ This scenario would REDUCE churn risk!")
-            elif new_prob > base_pred['probability']:
+            elif new_prob > base_pred["probability"]:
                 st.error("❌ This scenario would INCREASE churn risk!")
             else:
                 st.info("ℹ️ This scenario has no significant impact on churn risk")
-            
+
             # Show what changed
             st.write("**Changes in this scenario:**")
             changes = []
-            if new_balance != base_customer['balance']:
-                changes.append(f"Balance: KES {base_customer['balance']:,.0f} → ${new_balance:,.0f}")
+            if new_balance != base_customer["balance"]:
+                changes.append(
+                    f"Balance: KES {base_customer['balance']:,.0f} → ${new_balance:,.0f}"
+                )
             if new_products > 0:
                 changes.append(f"Products: +{new_products} additional products")
-            if new_activity != ("Active" if base_customer['active_member'] else "Inactive"):
-                changes.append(f"Activity: {('Active' if base_customer['active_member'] else 'Inactive')} → {new_activity}")
-            if new_credit_card != base_customer['credit_card']:
-                changes.append(f"Credit Card: {('Yes' if base_customer['credit_card'] else 'No')} → {('Yes' if new_credit_card else 'No')}")
-            
+            if new_activity != (
+                "Active" if base_customer["active_member"] else "Inactive"
+            ):
+                changes.append(
+                    f"Activity: {('Active' if base_customer['active_member'] else 'Inactive')} → {new_activity}"
+                )
+            if new_credit_card != base_customer["credit_card"]:
+                changes.append(
+                    f"Credit Card: {('Yes' if base_customer['credit_card'] else 'No')} → {('Yes' if new_credit_card else 'No')}"
+                )
+
             for change in changes:
                 st.write(f"• {change}")
 
+
 def show_prediction_history(predictor):
-    """Display prediction history """
+    """Display prediction history"""
     st.subheader("📋 Prediction History")
-    
+
     # Show connection status
     if predictor.is_db_connected:
-        st.success("🗄️ Connected to SQLite database - predictions are being saved permanently")
+        st.success(
+            "🗄️ Connected to SQLite database - predictions are being saved permanently"
+        )
     else:
-        st.info("💻 Using local storage - predictions will be saved for this session only")
-    
+        st.info(
+            "💻 Using local storage - predictions will be saved for this session only"
+        )
+
     history_df = predictor.get_prediction_history(100)
-    
+
     if history_df.empty:
         st.info("No prediction history found. Make some predictions first!")
         return
-    
+
     # Ensure prediction_timestamp is datetime
-    if 'prediction_timestamp' in history_df.columns:
-        history_df['prediction_timestamp'] = pd.to_datetime(history_df['prediction_timestamp'])
-    
+    if "prediction_timestamp" in history_df.columns:
+        history_df["prediction_timestamp"] = pd.to_datetime(
+            history_df["prediction_timestamp"]
+        )
+
     # Filters
     col1, col2, col3 = st.columns(3)
     with col1:
         show_scenarios = st.checkbox("Show only scenarios", value=False)
     with col2:
         # Date filter - handle empty dataframe case
-        if not history_df.empty and 'prediction_timestamp' in history_df.columns:
-            min_date = history_df['prediction_timestamp'].min().date()
-            max_date = history_df['prediction_timestamp'].max().date()
+        if not history_df.empty and "prediction_timestamp" in history_df.columns:
+            min_date = history_df["prediction_timestamp"].min().date()
+            max_date = history_df["prediction_timestamp"].max().date()
             date_range = st.date_input("Date Range", [min_date, max_date])
         else:
             date_range = st.date_input("Date Range", [])
             min_date = max_date = None
     with col3:
-        risk_filter = st.selectbox("Risk Level", ["All", "Critical (80%+)", "High (60%+)", "Medium (40%+)", "Low (0-40%)"])
-    
+        risk_filter = st.selectbox(
+            "Risk Level",
+            ["All", "Critical (80%+)", "High (60%+)", "Medium (40%+)", "Low (0-40%)"],
+        )
+
     # Apply filters
     filtered_df = history_df.copy()
     if show_scenarios:
-        filtered_df = filtered_df[filtered_df['is_scenario']]
-    
+        filtered_df = filtered_df[filtered_df["is_scenario"]]
+
     if risk_filter != "All":
         risk_thresholds = {
-            'Critical (80%+)': 0.8,
-            'High (60%+)': 0.6, 
-            'Medium (40%+)': 0.4,
-            'Low (0-40%)': 0.4
+            "Critical (80%+)": 0.8,
+            "High (60%+)": 0.6,
+            "Medium (40%+)": 0.4,
+            "Low (0-40%)": 0.4,
         }
         threshold = risk_thresholds[risk_filter]
-        if risk_filter == 'Low (0-40%)':
-            filtered_df = filtered_df[filtered_df['churn_probability'] < threshold]
+        if risk_filter == "Low (0-40%)":
+            filtered_df = filtered_df[filtered_df["churn_probability"] < threshold]
         else:
-            filtered_df = filtered_df[filtered_df['churn_probability'] >= threshold]
-    
+            filtered_df = filtered_df[filtered_df["churn_probability"] >= threshold]
+
     # Apply date filter if range is selected and we have timestamp data
-    if len(date_range) == 2 and 'prediction_timestamp' in filtered_df.columns and not filtered_df.empty:
+    if (
+        len(date_range) == 2
+        and "prediction_timestamp" in filtered_df.columns
+        and not filtered_df.empty
+    ):
         start_date, end_date = date_range
         # Ensure the timestamp column is datetime for comparison
         filtered_df = filtered_df.copy()
-        filtered_df['prediction_timestamp'] = pd.to_datetime(filtered_df['prediction_timestamp'])
-        
+        filtered_df["prediction_timestamp"] = pd.to_datetime(
+            filtered_df["prediction_timestamp"]
+        )
+
         filtered_df = filtered_df[
-            (filtered_df['prediction_timestamp'].dt.date >= start_date) & 
-            (filtered_df['prediction_timestamp'].dt.date <= end_date)
+            (filtered_df["prediction_timestamp"].dt.date >= start_date)
+            & (filtered_df["prediction_timestamp"].dt.date <= end_date)
         ]
-    
+
     if filtered_df.empty:
         st.warning("No predictions match the selected filters.")
         return
-    
+
     # Display history with better formatting
     display_df = filtered_df.copy()
-    if 'prediction_timestamp' in display_df.columns:
-        display_df['prediction_timestamp'] = pd.to_datetime(display_df['prediction_timestamp']).dt.strftime('%Y-%m-%d %H:%M:%S')
-    
+    if "prediction_timestamp" in display_df.columns:
+        display_df["prediction_timestamp"] = pd.to_datetime(
+            display_df["prediction_timestamp"]
+        ).dt.strftime("%Y-%m-%d %H:%M:%S")
+
     st.dataframe(
-        display_df.style.format({
-            'churn_probability': '{:.2%}',
-            'balance': 'KES {:,.0f}',
-            'estimated_salary': 'KES {:,.0f}'
-        }).background_gradient(subset=['churn_probability'], cmap='RdYlGn_r'),
+        display_df.style.format(
+            {
+                "churn_probability": "{:.2%}",
+                "balance": "KES {:,.0f}",
+                "estimated_salary": "KES {:,.0f}",
+            }
+        ).background_gradient(subset=["churn_probability"], cmap="RdYlGn_r"),
         use_container_width=True,
-        height=400
+        height=400,
     )
-    
+
     # Summary statistics
     st.subheader("📊 Prediction Summary")
     col1, col2, col3, col4 = st.columns(4)
     with col1:
         st.metric("Total Predictions", len(filtered_df))
     with col2:
-        avg_prob = filtered_df['churn_probability'].mean()
+        avg_prob = filtered_df["churn_probability"].mean()
         st.metric("Average Probability", f"{avg_prob:.2%}")
     with col3:
-        high_risk_count = len(filtered_df[filtered_df['churn_probability'] > 0.6])
+        high_risk_count = len(filtered_df[filtered_df["churn_probability"] > 0.6])
         st.metric("High Risk Cases", high_risk_count)
     with col4:
-        scenario_count = len(filtered_df[filtered_df['is_scenario']])
+        scenario_count = len(filtered_df[filtered_df["is_scenario"]])
         st.metric("Scenario Analyses", scenario_count)
-    
+
     # Recent predictions chart - only if we have timestamp data
-    if len(filtered_df) > 1 and 'prediction_timestamp' in filtered_df.columns:
+    if len(filtered_df) > 1 and "prediction_timestamp" in filtered_df.columns:
         st.subheader("📈 Recent Prediction Trends")
-        
+
         # Ensure timestamp is datetime for sorting
         chart_df = filtered_df.copy()
-        chart_df['prediction_timestamp'] = pd.to_datetime(chart_df['prediction_timestamp'])
-        
+        chart_df["prediction_timestamp"] = pd.to_datetime(
+            chart_df["prediction_timestamp"]
+        )
+
         # Create a time series of predictions
-        recent_predictions = chart_df.sort_values('prediction_timestamp').tail(20)
-        
-        fig = px.line(recent_predictions, x='prediction_timestamp', y='churn_probability',
-                     title='Recent Churn Probability Trends',
-                     markers=True)
-        fig.update_layout(xaxis_title='Time', yaxis_title='Churn Probability')
+        recent_predictions = chart_df.sort_values("prediction_timestamp").tail(20)
+
+        fig = px.line(
+            recent_predictions,
+            x="prediction_timestamp",
+            y="churn_probability",
+            title="Recent Churn Probability Trends",
+            markers=True,
+        )
+        fig.update_layout(xaxis_title="Time", yaxis_title="Churn Probability")
         st.plotly_chart(fig, use_container_width=True)
+
+
 def show_user_guide():
     """Display user guide"""
     st.header("📚 User Guide")
-    
+
     with st.expander("🚀 Getting Started", expanded=True):
         st.markdown("""
         ### Welcome to the Customer Churn Prediction System!
@@ -1494,7 +1836,7 @@ def show_user_guide():
         3. **Predictions**: Analyze individual customers and run scenarios
         4. **Dashboard**: Explore insights through interactive visualizations
         """)
-    
+
     with st.expander("📊 Data Requirements"):
         st.markdown("""
         **Required CSV Columns:**
@@ -1514,7 +1856,7 @@ def show_user_guide():
         - No setup required - automatically creates database file
         - All data stored in single file for portability
         """)
-    
+
     with st.expander("🎯 Making Predictions"):
         st.markdown("""
         **Single Customer Prediction:**
@@ -1528,7 +1870,7 @@ def show_user_guide():
         - See how changes affect churn probability
         - Compare original vs. modified risk levels
         """)
-    
+
     with st.expander("📈 Understanding Results"):
         st.markdown("""
         **Risk Levels:**
@@ -1545,26 +1887,35 @@ def show_user_guide():
         - **ROC-AUC**: Model's ability to distinguish between classes
         """)
 
+
 def main():
     """Main Streamlit application"""
     setup_streamlit_app()
-    
-    st.markdown('<h1 class="main-header">🏦 Advanced Customer Churn Prediction System</h1>', unsafe_allow_html=True)
+
+    st.markdown(
+        '<h1 class="main-header">🏦 Advanced Customer Churn Prediction System</h1>',
+        unsafe_allow_html=True,
+    )
     st.markdown("""
     *Identify at-risk customers, predict churn probability, and generate personalized retention strategies 
     using machine learning and interactive analytics.*
     """)
-    
+
     # Initialize predictor
     predictor = initialize_predictor()
-    
+
     # Main navigation
     st.sidebar.title("Navigation")
     app_mode = st.sidebar.radio(
         "Select Module",
-        ["📚 User Guide", "📊 Data Management", "📈 Analytics Dashboard", "🔮 Predictions & Scenarios"]
+        [
+            "📚 User Guide",
+            "📊 Data Management",
+            "📈 Analytics Dashboard",
+            "🔮 Predictions & Scenarios",
+        ],
     )
-    
+
     # Display selected module
     if app_mode == "📚 User Guide":
         show_user_guide()
@@ -1574,7 +1925,7 @@ def main():
         show_dashboard(predictor)
     elif app_mode == "🔮 Predictions & Scenarios":
         show_prediction_interface(predictor)
-    
+
     # Footer
     st.sidebar.markdown("---")
     st.sidebar.info("""
@@ -1583,6 +1934,7 @@ def main():
     - Database: ✅ SQLite
     - Predictions: ✅ Active
     """)
+
 
 # =============================================================================
 # RUN THE APPLICATION
