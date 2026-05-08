@@ -18,7 +18,6 @@ import base64
 from datetime import datetime, timedelta
 import seaborn as sns
 import matplotlib.pyplot as plt
-import os
 warnings.filterwarnings('ignore')
 
 # =============================================================================
@@ -359,7 +358,7 @@ class EnhancedChurnPredictor:
 
             return df
 
-        except Exception as e:
+        except Exception:
             # Fallback: create minimal data
             return pd.DataFrame({
                 'customer_id': [1, 2, 3],
@@ -826,7 +825,7 @@ def show_sqlite_connection(predictor):
             st.write("SQLite Database Configuration:")
             
             db_path = st.text_input("Database Path", value="churn_prediction.db")
-            create_new = st.checkbox("Create new database if it doesn't exist", value=True)
+            _ = st.checkbox("Create new database if it doesn't exist", value=True)
             
             if st.form_submit_button("🔗 Connect to SQLite Database", use_container_width=True):
                 success, message = predictor.connect_db(db_path)
@@ -1408,7 +1407,7 @@ def show_prediction_history(predictor):
     # Apply filters
     filtered_df = history_df.copy()
     if show_scenarios:
-        filtered_df = filtered_df[filtered_df['is_scenario'] == True]
+        filtered_df = filtered_df[filtered_df['is_scenario']]
     
     if risk_filter != "All":
         risk_thresholds = {
@@ -1466,7 +1465,7 @@ def show_prediction_history(predictor):
         high_risk_count = len(filtered_df[filtered_df['churn_probability'] > 0.6])
         st.metric("High Risk Cases", high_risk_count)
     with col4:
-        scenario_count = len(filtered_df[filtered_df['is_scenario'] == True])
+        scenario_count = len(filtered_df[filtered_df['is_scenario']])
         st.metric("Scenario Analyses", scenario_count)
     
     # Recent predictions chart - only if we have timestamp data
