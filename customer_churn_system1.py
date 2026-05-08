@@ -1,23 +1,17 @@
 # customer_churn_system.py
 import streamlit as st
 import pandas as pd
-import numpy as np
 import plotly.express as px
 import plotly.graph_objects as go
-import plotly.figure_factory as ff
 from sklearn.model_selection import train_test_split
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, roc_auc_score, confusion_matrix
 from sklearn.preprocessing import StandardScaler, LabelEncoder
 import sqlite3
-import pickle
 import warnings
 import io
-import base64
-from datetime import datetime, timedelta
-import seaborn as sns
-import matplotlib.pyplot as plt
+from datetime import datetime
 warnings.filterwarnings('ignore')
 
 # =============================================================================
